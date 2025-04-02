@@ -13,8 +13,13 @@ import {
   Box,
   Paper
 } from '@mui/material';
+import React from 'react';
 
-const Login = () => {
+const API = import.meta.env.VITE_API_URL;
+
+console.log(API)
+
+const Login: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -26,22 +31,36 @@ const Login = () => {
     resolver: yupResolver(loginSchema),
   });
 
-  const onSubmit = async (data) => {
-    const res = await fetch('/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-
-    const result = await res.json();
-
-    if (res.ok && result.token) {
-      dispatch(loginSuccess({ user: result.user, token: result.token }));
-      navigate('/dashboard');
-    } else {
-      alert('Login failed');
+  const onSubmit = async (data: { email: string; password: string }) => {
+    try {
+      const res = await fetch(`${API}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      let result;
+      try {
+        result = await res.json();
+      } catch {
+        result = null;
+      }
+      
+      if (res.ok && result?.token) {
+        localStorage.setItem('token', result.token);
+        localStorage.setItem('user', JSON.stringify(result.user));
+        dispatch(loginSuccess({ token: result.token, user: result.user }));
+        navigate('/dashboard');
+      } else {
+        alert(result?.message || 'Login failed');
+      }
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      alert('Server error');
     }
   };
+  
 
   return (
     <Container maxWidth="sm">
