@@ -26,7 +26,6 @@ const NavBar = () => {
             <Typography variant="body1">
               Hello, {user?.email}
             </Typography>
-            <Button color="inherit" component={Link} to="/dashboard">Dashboard</Button>
             <Button color="inherit" onClick={handleLogout}>Logout</Button>
           </Box>
         ) : (

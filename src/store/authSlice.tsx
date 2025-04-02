@@ -7,21 +7,14 @@ interface AuthState {
   } | null;
   token: string | null;
   isAuthenticated: boolean;
+  isLoaded: boolean;
 }
-
-interface AuthState {
-  user: { id: number; email: string } | null;
-  token: string | null;
-  isAuthenticated: boolean;
-  isLoaded: boolean; // ✅ new
-}
-
 
 const initialState: AuthState = {
-  user: null,
-  token: null,
+  user: JSON.parse(localStorage.getItem('user') || 'null'),
+  token: localStorage.getItem('token'),
   isAuthenticated: false,
-  isLoaded: false
+  isLoaded: false,
 };
 
 export const authSlice = createSlice({
@@ -36,21 +29,30 @@ export const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
       state.isLoaded = true;
+
+      localStorage.setItem('token', action.payload.token);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
     logout: (state) => {
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.isLoaded = true;
+
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
     },
-    loadAuthFromStorage: (state, action: PayloadAction<{ user: AuthState['user']; token: string } | null>) => {
+    loadAuthFromStorage: (
+      state,
+      action: PayloadAction<{ user: AuthState['user']; token: string } | null>
+    ) => {
       if (action.payload) {
         state.user = action.payload.user;
         state.token = action.payload.token;
         state.isAuthenticated = true;
       }
-      state.isLoaded = true; // ✅ mark it ready regardless
-    }
+      state.isLoaded = true;
+    },
   },
 });
 

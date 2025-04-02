@@ -16,7 +16,6 @@ import { loginSuccess } from '../store/authSlice';
 
 const API = import.meta.env.VITE_API_URL;
 
-
 type RegisterFormData = yup.InferType<typeof registerSchema>;
 
 const Register = () => {

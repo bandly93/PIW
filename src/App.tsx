@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import Home from './pages/Home';
+import { useDispatch, useSelector } from 'react-redux';
+import { loadAuthFromStorage } from './store/authSlice';
+import { RootState } from './store';
+
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Register from './pages/Register';
@@ -11,16 +13,17 @@ import BMR from './pages/BMR';
 import Report from './pages/Report';
 import Logger from './pages/Logger';
 import ProtectedRoute from './components/ProtectedRoute';
-import GuestRoute from './components/GuestsRoute';
-import { loadAuthFromStorage } from './store/authSlice';
+import PublicRoute from './components/PublicRoutes';
+import NotFound from './pages/NotFound';
 
 const App = () => {
   const dispatch = useDispatch()
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-  
+
     if (token && user) {
       dispatch(loadAuthFromStorage({ token, user: JSON.parse(user) }));
     } else {
@@ -32,10 +35,12 @@ const App = () => {
     <BrowserRouter>
       <NavBar />
       <Routes>
-
-        <Route path="/" element={<GuestRoute> <Login /> </GuestRoute>} />
-        <Route path="/login" element={<GuestRoute> <Login /> </GuestRoute>} />
-        <Route path="/register" element={<GuestRoute> <Register /> </GuestRoute>} />
+        <Route path="*" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <NotFound />} />
+        {/* Public only if not logged in */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
 
         {/* 🔐 Protected area */}
         <Route element={<ProtectedRoute />}>

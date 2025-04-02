@@ -1,135 +1,229 @@
 import {
   Container,
-  TextField,
-  Button,
   Typography,
   Box,
+  TextField,
   MenuItem,
-  Paper
+  Button,
+  Stack,
+  Paper,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
 
-type LogEntry = {
-  date: string;
-  type: 'Workout' | 'Meal' | 'Weight';
+const API = import.meta.env.VITE_API_URL;
+
+type LogType = 'Workout' | 'Food' | 'Other';
+
+interface LogFormData {
+  type: LogType;
   details: string;
-  calories?: number;
-};
+  calories?: string | number;
+  protein?: string | number;
+  carbs?: string | number;
+  fats?: string | number;
+  foodName?: string;
+}
+
 
 const Logger = () => {
-  const { control, handleSubmit, reset } = useForm<LogEntry>({
+  const { control, handleSubmit, watch, reset } = useForm<LogFormData>({
     defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      type: 'Workout',
+      type: 'Food',
       details: '',
       calories: undefined,
-    }
+      foodName: '',
+      protein: undefined,
+      carbs: undefined,
+      fats: undefined,
+    },
   });
 
-  const navigate = useNavigate();
-
-  const onSubmit = async (data: LogEntry) => {
-    try {
-      const token = localStorage.getItem('token');
-
-      const res = await fetch('/api/logs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(data),
-      });
+  const type = watch('type');
+  const protein = Number(watch('protein')) || 0;
+  const carbs = Number(watch('carbs')) || 0;
+  const fats = Number(watch('fats')) || 0;
 
 
-      if (res.ok) {
-        reset();
-        navigate('/dashboard');
-      } else {
-        const error = await res.json();
-        alert(error.message || 'Something went wrong');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('Server error');
+  const estimatedCalories =
+    type === 'Food' ? protein * 4 + carbs * 4 + fats * 9 : null;
+
+  const [open, setOpen] = useState(false);
+
+  const onSubmit = async (data: LogFormData) => {
+    const calories =
+      type === 'Food' ? estimatedCalories : data.calories || 0;
+
+    const payload = {
+      date: new Date().toISOString().split('T')[0],
+      type,
+      details:
+        type === 'Food'
+          ? `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`
+          : data.details,
+      calories,
+    };
+
+    const res = await fetch(`${API}/api/logs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      setOpen(true);                // ✅ Show snackbar
+      reset({
+        type: 'Food',
+        details: '',
+        calories: 0,
+        foodName: '',
+        protein: '',
+        carbs: '',
+        fats: '',
+      });   // ✅ Clear form
+    } else {
+      alert('Failed to log entry.');
     }
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 4 }}>
-      <Paper elevation={3} sx={{ p: 4 }}>
-        <Typography variant="h5" gutterBottom>Log Activity</Typography>
+    <Container maxWidth="sm">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Paper sx={{ p: 4, mt: 4, borderRadius: 3 }} elevation={3}>
+          <Typography variant="h5" gutterBottom align="center">
+            Log Entry
+          </Typography>
 
-        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-
-          <Controller
-            name="date"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Date"
-                type="date"
-                fullWidth
-                margin="normal"
-                InputLabelProps={{ shrink: true }}
+          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <Stack spacing={2}>
+              <Controller
+                name="type"
+                control={control}
+                render={({ field }) => (
+                  <TextField select label="Type" fullWidth {...field}>
+                    <MenuItem value="Workout">Workout</MenuItem>
+                    <MenuItem value="Food">Food</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
+                  </TextField>
+                )}
               />
-            )}
-          />
 
-          <Controller
-            name="type"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                select
-                label="Type"
-                fullWidth
-                margin="normal"
-              >
-                <MenuItem value="Workout">Workout</MenuItem>
-                <MenuItem value="Meal">Meal</MenuItem>
-                <MenuItem value="Weight">Weight</MenuItem>
-              </TextField>
-            )}
-          />
+              {type === 'Food' ? (
+                <>
+                  <Controller
+                    name="foodName"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField label="Food Name" fullWidth required {...field} />
+                    )}
+                  />
+                  <Controller
+                    name="protein"
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                      <TextField
+                        label="Protein (g)"
+                        type="number"
+                        fullWidth
+                        required
+                        {...field}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="carbs"
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                      <TextField
+                        label="Carbs (g)"
+                        type="number"
+                        fullWidth
+                        required
+                        {...field}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="fats"
+                    control={control}
+                    defaultValue=""
+                    render={({ field }) => (
+                      <TextField
+                        label="Fats (g)"
+                        type="number"
+                        fullWidth
+                        required
+                        {...field}
+                      />
+                    )}
+                  />
+                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                    Estimated Calories: {estimatedCalories} kcal
+                  </Typography>
+                </>
+              ) : (
+                <>
+                  <Controller
+                    name="details"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        label="Details"
+                        fullWidth
+                        multiline
+                        rows={3}
+                        required
+                        {...field}
+                      />
+                    )}
+                  />
+                  <Controller
+                    name="calories"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        label="Calories"
+                        type="number"
+                        fullWidth
+                        required
+                        {...field}
+                      />
+                    )}
+                  />
+                </>
+              )}
 
-          <Controller
-            name="details"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Details"
-                fullWidth
-                margin="normal"
-                multiline
-                rows={3}
-              />
-            )}
-          />
+              <Button type="submit" variant="contained" size="large">
+                Submit Log
+              </Button>
+            </Stack>
+          </Box>
+        </Paper>
+      </motion.div>
 
-          <Controller
-            name="calories"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Calories (optional)"
-                type="number"
-                fullWidth
-                margin="normal"
-              />
-            )}
-          />
-
-          <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
-            Save Entry
-          </Button>
-        </Box>
-      </Paper>
+      {/* ✅ Snackbar for feedback */}
+      <Snackbar
+        open={open}
+        autoHideDuration={3000}
+        onClose={() => setOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="success" variant="filled" onClose={() => setOpen(false)}>
+          Log submitted successfully!
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

@@ -12,6 +12,8 @@ import {
   Box
 } from '@mui/material';
 
+const API = import.meta.env.VITE_API_URL;
+
 type LogEntry = {
   id: number;
   date: string;
@@ -27,7 +29,11 @@ const Fitness = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const res = await fetch('/api/logs');
+        const res = await fetch(`${API}/api/logs/`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
         const data = await res.json();
         setLogs(data);
       } catch (err) {

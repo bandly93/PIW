@@ -1,39 +1,28 @@
-const { Router } = require('express');
-// import { authenticateJWT } from '../middleware/auth'; // if you’re using JWT
-const { Log } = require('../models'); // Sequelize model
+const express = require('express');
+const { Log } = require('../models');
+const verifyToken = require('../middleware/authMiddleware');
+const authenticateToken = require('../middleware/authMiddleware');
+const router = express.Router();
 
-const router = Router();
+// Protect everything below with JWT
+router.use(verifyToken);
 
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const logs = await Log.findAll({
+      where: { userId: req.user.id },
       order: [['date', 'DESC']],
     });
     res.json(logs);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error fetching logs' });
+    console.error('Sequelize error:', err);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
 router.post('/', async (req, res) => {
-  try {
-    const { date, type, details, calories } = req.body;
-
-    // Optionally get userId from req.user if using JWT
-    const log = await Log.create({
-      // userId: req.user.id,
-      date,
-      type,
-      details,
-      calories,
-    });
-
-    res.status(201).json(log);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
+  const newLog = await Log.create({ ...req.body, userId: req.user.id });
+  res.status(201).json(newLog);
 });
 
 module.exports = router;

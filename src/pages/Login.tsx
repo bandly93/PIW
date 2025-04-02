@@ -17,8 +17,6 @@ import React from 'react';
 
 const API = import.meta.env.VITE_API_URL;
 
-console.log(API)
-
 const Login: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -60,7 +58,7 @@ const Login: React.FC = () => {
       alert('Server error');
     }
   };
-  
+
 
   return (
     <Container maxWidth="sm">
