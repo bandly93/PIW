@@ -14,7 +14,7 @@ app.use('/api', authRoutes)
 app.use('/api/logs', logRoutes);
 
 // Connect and sync DB
-sequelize.sync({ alter: true }) // ✅ Use `force: true` to reset tables (dev only)
+sequelize.sync({ force: true }) // ✅ Use `force: true` to reset tables (dev only)
   .then(() => {
     console.log('Database synced ✅');
     app.listen(3001, async () => {

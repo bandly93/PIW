@@ -20,11 +20,14 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 
   if (date) {
-    where.date = date; // 👈 Exact match for the selected day
-  } else if (from && to) {
-    where.date = { [Op.between]: [from, to] };
+    const startOfDay = new Date(`${date}T00:00:00`);
+    const endOfDay = new Date(`${date}T23:59:59.999`);
+    where.date = {
+      [Op.between]: [startOfDay, endOfDay],
+    };
   }
-
+  
+  
   try {
     const logs = await Log.findAll({ where });
     res.json(logs);
@@ -33,10 +36,6 @@ router.get('/', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
-
-
-
 
 router.post('/', async (req, res) => {
   const newLog = await Log.create({ ...req.body, userId: req.user.id });

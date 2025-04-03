@@ -13,6 +13,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { getLocalDateString } from '../utils/getLocalDateString';
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -58,7 +59,7 @@ const Logger = () => {
       type === 'Food' ? estimatedCalories : data.calories || 0;
 
     const payload = {
-      date: new Date().toISOString().split('T')[0],
+      date: getLocalDateString(),
       type,
       details:
         type === 'Food'
