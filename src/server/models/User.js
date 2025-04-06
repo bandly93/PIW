@@ -15,6 +15,28 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
   },
+
+  // 🆕 Macro & calorie goals
+  calorieGoal: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 2000,
+  },
+  proteinGoal: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 150,
+  },
+  carbGoal: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 200,
+  },
+  fatGoal: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 70,
+  },
 });
 
 module.exports = User;

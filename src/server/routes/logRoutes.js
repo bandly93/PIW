@@ -9,8 +9,6 @@ const { Op } = require('sequelize');
 router.use(verifyToken);
 router.get('/', authenticateToken, async (req, res) => {
   const { type, date, from, to } = req.query;
-
-  console.log('does it reach here')
   const userId = req.user.id;
 
   const where = { userId };
@@ -24,12 +22,12 @@ router.get('/', authenticateToken, async (req, res) => {
     const endOfDay = new Date(`${date}T23:59:59.999`);
     where.date = {
       [Op.between]: [startOfDay, endOfDay],
+      
     };
   }
   
-  
   try {
-    const logs = await Log.findAll({ where });
+    const logs = await Log.findAll({ where, order: [['createdAt', 'DESC']] });
     res.json(logs);
   } catch (err) {
     console.error('Error fetching logs:', err);

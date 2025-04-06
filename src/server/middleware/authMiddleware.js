@@ -1,26 +1,23 @@
-// src/server/middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = 'your-secret-key'; // Or use env vars
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
+  console.log('🔐 Checking token for route:', req.method, req.originalUrl);
 
-  if (!token) {
-    console.log('❌ No token provided');
-    return res.sendStatus(401);
-  }
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1];
 
-  try {
-    const user = jwt.verify(token, JWT_SECRET);
+  if (!token) return res.status(401).json({ message: 'No token provided' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      console.error('❌ Token verification failed:', err.message);
+      return res.status(403).json({ message: 'Invalid or expired token' });
+    }
+
     req.user = user;
     next();
-  } catch (err) {
-    console.error('❌ Token verification failed:', err.message);
-    return res.sendStatus(403);
-  }
+  });
 };
-
 
 module.exports = authenticateToken;

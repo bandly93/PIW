@@ -17,8 +17,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
 import MacroPieChart from '../components/MacroPieChart';
-
-const API = import.meta.env.VITE_API_URL;
+import { fetchApi } from '../utils/fetch';
 
 type LogEntry = {
   id: number;
@@ -42,13 +41,7 @@ const Fitness = () => {
       const date = format(selectedDate, 'yyyy-MM-dd');
 
       try {
-        const res = await fetch(`${API}/api/logs?type=Food&date=${date}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-
-        const data: LogEntry[] = await res.json();
+        const { data } = await fetchApi<LogEntry[]>('GET', `/api/logs?type=Food&date=${date}`, null);
         setLogs(data);
 
         const totals = data.reduce(
@@ -75,15 +68,34 @@ const Fitness = () => {
     fetchLogs();
   }, [selectedDate]); // 👈 ✅ Dependency added here
 
+  type MacroGoals = {
+    proteinGoal: number;
+    carbsGoal: number;
+    fatsGoal: number;
+    calorieGoal: number;
+  };
+
+  const [goals, setGoals] = useState<MacroGoals | null>(null);
+
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        const { data } = await fetchApi<MacroGoals>('GET', `/api/user/goals`, null);
+        setGoals(data);
+      } catch (err) {
+        console.error('Failed to fetch macro goals:', err);
+      }
+    };
+    fetchGoals();
+  }, []);
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Container maxWidth="md" sx={{ mt: 4 }}>
         <Typography variant="h4" gutterBottom align="center">
           Daily Macro Breakdown
         </Typography>
-
         <Box display="flex" justifyContent="center" alignItems="center" gap={2} mb={3}>
-
           <Button
             variant="outlined"
             onClick={() => {
@@ -96,14 +108,12 @@ const Fitness = () => {
           >
             {"<"}
           </Button>
-
           <DatePicker
             label="Select a date"
             value={selectedDate}
             onChange={(newDate) => setSelectedDate(newDate)}
             disableFuture
           />
-
           <Button
             variant="outlined"
             disabled={
@@ -136,7 +146,15 @@ const Fitness = () => {
                 fats={macros.fats}
               />
             </Paper>
-
+            {goals && (
+              <Box textAlign="center" mb={2}>
+                <Typography variant="subtitle1">Daily Goals:</Typography>
+                <Typography>Protein: {goals.proteinGoal}g</Typography>
+                <Typography>Carbs: {goals.carbsGoal}g</Typography>
+                <Typography>Fats: {goals.fatsGoal}g</Typography>
+                <Typography>Calories: {goals.calorieGoal} kcal</Typography>
+              </Box>
+            )}
             <Paper elevation={3}>
               <Table>
                 <TableHead>

@@ -30,20 +30,23 @@ const Login: React.FC = () => {
   });
 
   const onSubmit = async (data: { email: string; password: string }) => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
     try {
       const res = await fetch(`${API}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      
+
       let result;
       try {
         result = await res.json();
       } catch {
         result = null;
       }
-      
+
       if (res.ok && result?.token) {
         localStorage.setItem('token', result.token);
         localStorage.setItem('user', JSON.stringify(result.user));
@@ -52,13 +55,11 @@ const Login: React.FC = () => {
       } else {
         alert(result?.message || 'Login failed');
       }
-      
     } catch (err) {
       console.error('Login error:', err);
       alert('Server error');
     }
   };
-
 
   return (
     <Container maxWidth="sm">

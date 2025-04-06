@@ -14,8 +14,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { getLocalDateString } from '../utils/getLocalDateString';
-
-const API = import.meta.env.VITE_API_URL;
+import { fetchApi } from '../utils/fetch';
 
 type LogType = 'Workout' | 'Food' | 'Other';
 
@@ -28,7 +27,6 @@ interface LogFormData {
   fats?: string | number;
   foodName?: string;
 }
-
 
 const Logger = () => {
   const { control, handleSubmit, watch, reset } = useForm<LogFormData>({
@@ -47,7 +45,6 @@ const Logger = () => {
   const protein = Number(watch('protein')) || 0;
   const carbs = Number(watch('carbs')) || 0;
   const fats = Number(watch('fats')) || 0;
-
 
   const estimatedCalories =
     type === 'Food' ? protein * 4 + carbs * 4 + fats * 9 : null;
@@ -68,16 +65,9 @@ const Logger = () => {
       calories,
     };
 
-    const res = await fetch(`${API}/api/logs`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    const { status } = await fetchApi('POST', '/api/logs', payload)
 
-    if (res.ok) {
+    if (status) {
       setOpen(true);                // ✅ Show snackbar
       reset({
         type: 'Food',

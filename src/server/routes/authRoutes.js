@@ -5,19 +5,21 @@ const { User } = require('../models');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const authenticateToken = require('../middleware/authMiddleware')
 
 // POST: /login
 const loginHandler = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body; 
 
   try {
     const user = await User.findOne({ where: { email } });
+
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: '12h' });
+    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: '1d' });
 
     res.json({
       token,
@@ -40,7 +42,7 @@ const registerHandler = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ email, password: hashedPassword, name });
 
-    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: '12h' });
+    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: '1d' });
 
     res.status(201).json({
       token,
@@ -52,8 +54,14 @@ const registerHandler = async (req, res) => {
   }
 };
 
-module.exports = router;
 
 
 router.post('/login', loginHandler);
 router.post('/register', registerHandler);
+
+
+// 👇 protect everything after this line
+router.use(authenticateToken);
+
+module.exports = router;
+
