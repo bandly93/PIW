@@ -1,17 +1,14 @@
-const API = import.meta.env.VITE_API_URL;
-
-export interface ApiResponse<T> {
-  data: T;
-  status: number;
-  ok: boolean;
-  raw: Response;
-}
+import { logout } from '../store/authSlice'; // or wherever it's defined
+import { AppDispatch } from '../store';
 
 export const fetchApi = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   url: string,
-  body?: any
-): Promise<ApiResponse<T>> => {
+  body?: any,
+  dispatch?: AppDispatch
+): Promise<{ data?: T; status: number }> => {
+  const API = import.meta.env.VITE_API_URL;
+
   const res = await fetch(`${API}${url}`, {
     method,
     headers: {
@@ -21,12 +18,12 @@ export const fetchApi = async <T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = await res.json();
+  // 🛑 Handle expired token
+  if (res.status === 401 && dispatch) {
+    dispatch(logout());
+    alert('Session expired. Please log in again.');
+  }
 
-  return {
-    data,
-    status: res.status,
-    ok: res.ok,
-    raw: res,
-  };
+  const data = await res.json().catch(() => ({}));
+  return { data, status: res.status };
 };

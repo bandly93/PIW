@@ -16,7 +16,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoutes';
 import NotFound from './pages/NotFound';
 
-
 const App = () => {
   const dispatch = useDispatch()
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);

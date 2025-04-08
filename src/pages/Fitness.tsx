@@ -18,6 +18,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { format } from 'date-fns';
 import MacroPieChart from '../components/MacroPieChart';
 import { fetchApi } from '../utils/fetch';
+import { useAppDispatch } from '../store'
 
 type LogEntry = {
   id: number;
@@ -32,6 +33,7 @@ const Fitness = () => {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [macros, setMacros] = useState({ protein: 0, carbs: 0, fats: 0 });
+  const dispatch = useAppDispatch()
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -41,7 +43,7 @@ const Fitness = () => {
       const date = format(selectedDate, 'yyyy-MM-dd');
 
       try {
-        const { data } = await fetchApi<LogEntry[]>('GET', `/api/logs?type=Food&date=${date}`, null);
+        const { data } = await fetchApi<LogEntry[]>('GET', `/api/logs?type=Food&date=${date}`, null, dispatch);
         setLogs(data);
 
         const totals = data.reduce(

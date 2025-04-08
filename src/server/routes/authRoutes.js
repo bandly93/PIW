@@ -5,6 +5,7 @@ const { User } = require('../models');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_EXPIRESIN = process.env.JWT_EXPIRESIN
 const authenticateToken = require('../middleware/authMiddleware')
 
 // POST: /login
@@ -19,7 +20,7 @@ const loginHandler = async (req, res) => {
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) return res.status(401).json({ message: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: JWT_EXPIRESIN });
 
     res.json({
       token,
@@ -42,7 +43,7 @@ const registerHandler = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ email, password: hashedPassword, name });
 
-    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: JWT_EXPIRESIN });
 
     res.status(201).json({
       token,
@@ -54,11 +55,8 @@ const registerHandler = async (req, res) => {
   }
 };
 
-
-
 router.post('/login', loginHandler);
 router.post('/register', registerHandler);
-
 
 // 👇 protect everything after this line
 router.use(authenticateToken);

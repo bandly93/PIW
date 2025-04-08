@@ -37,10 +37,9 @@ export const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      state.isLoaded = true;
-
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      window.location.href = '/login'; // 👈 force redirect
     },
     loadAuthFromStorage: (
       state,
