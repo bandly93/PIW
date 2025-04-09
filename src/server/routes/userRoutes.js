@@ -16,8 +16,8 @@ router.get('/goals', authenticateToken, async (req, res) => {
 
     res.json({
       proteinGoal: user.proteinGoal,
-      carbsGoal: user.carbsGoal,
-      fatsGoal: user.fatsGoal,
+      carbGoal: user.carbGoal,
+      fatGoal: user.fatGoal,
       calorieGoal: user.calorieGoal,
     });
   } catch (err) {

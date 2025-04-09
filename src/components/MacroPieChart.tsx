@@ -8,7 +8,7 @@ import {
 } from 'recharts';
 import { Paper, Typography, Box } from '@mui/material';
 
-const COLORS = ['#4caf50', '#2196f3', '#ff9800']; // Protein, Carbs, Fats
+const COLORS = ['#FE4A49', '#009FB7', '#FED766']; // Protein, Carbs, Fats
 
 interface MacroPieChartProps {
   protein: number;
@@ -19,8 +19,8 @@ interface MacroPieChartProps {
 const MacroPieChart = ({ protein, carbs, fats }: MacroPieChartProps) => {
   const data = [
     { name: 'Protein', value: protein },
-    { name: 'Carbs', value: carbs },
-    { name: 'Fats', value: fats },
+    { name: 'Carb', value: carbs },
+    { name: 'Fat', value: fats },
   ];
 
   return (

@@ -11,10 +11,12 @@ import NavBar from './components/NavBar';
 import Fitness from './pages/Fitness';
 import BMR from './pages/BMR';
 import Report from './pages/Report';
-import Logger from './pages/Logger';
+import TasksEditor from './pages/Editor';
+import NotFound from './pages/NotFound';
+import PlannerScaffold from './pages/PlannerScaffold';
+
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoutes';
-import NotFound from './pages/NotFound';
 
 const App = () => {
   const dispatch = useDispatch()
@@ -44,8 +46,10 @@ const App = () => {
 
         {/* 🔐 Protected area */}
         <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<PlannerScaffold />} />
+
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/logger" element={<Logger />} />
+          <Route path="/editor" element={<TasksEditor />} />
           <Route path="/fitness" element={<Fitness />} />
           <Route path="/bmr" element={<BMR />} />
           <Route path="/report" element={<Report />} />

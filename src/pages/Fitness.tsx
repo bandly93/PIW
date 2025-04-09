@@ -152,8 +152,8 @@ const Fitness = () => {
               <Box textAlign="center" mb={2}>
                 <Typography variant="subtitle1">Daily Goals:</Typography>
                 <Typography>Protein: {goals.proteinGoal}g</Typography>
-                <Typography>Carbs: {goals.carbsGoal}g</Typography>
-                <Typography>Fats: {goals.fatsGoal}g</Typography>
+                <Typography>Carb: {goals.carbGoal}g</Typography>
+                <Typography>Fat: {goals.fatGoal}g</Typography>
                 <Typography>Calories: {goals.calorieGoal} kcal</Typography>
               </Box>
             )}
