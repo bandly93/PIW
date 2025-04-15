@@ -27,8 +27,8 @@ const Dashboard = () => {
           <Button variant="contained" component={Link} to="/bmr">
             BMR Calculator
           </Button>
-          <Button variant="contained" component={Link} to="/logger">
-            Log Activity
+          <Button variant="contained" component={Link} to="/">
+            Planner Scaffold (Working Feature!)
           </Button>
           <Button variant="contained" component={Link} to="/fitness">
             Fitness Overview
