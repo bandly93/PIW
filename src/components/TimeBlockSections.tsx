@@ -24,6 +24,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface PlannerItem {
   id: string;
@@ -154,23 +155,25 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
   }, [type]);
 
   const handleAdd = () => {
+    if (type === 'Meal') {
+      setShowMealForm(true);
+      return;
+    }
+  
     if (!text.trim()) return;
+  
     const newItem: PlannerItem = {
       id: Date.now().toString(),
       text,
       type,
       completed: false,
     };
-
-    if (type === 'Meal') {
-      setShowMealForm(true);
-      return;
-    }
-
+  
     onAdd(newItem);
     setText('');
     setType('Other');
   };
+  
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
@@ -238,21 +241,29 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
         </SortableContext>
       </DndContext>
 
-      <Dialog open={showMealForm} onClose={() => setShowMealForm(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={showMealForm}
+        onClose={() => setShowMealForm(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <FoodLoggerForm
           onClose={() => setShowMealForm(false)}
-          onSubmit={(foodDetail: string) => {
+          onAddMeal={(details: string) => {
             const newItem: PlannerItem = {
               id: Date.now().toString(),
-              text: foodDetail,
+              text: details,
               type: 'Meal',
               completed: false,
             };
             onAdd(newItem);
             setShowMealForm(false);
+            setType('Other'); // ✅ reset type for clean UX
           }}
         />
       </Dialog>
+
+
     </Paper>
   );
 };

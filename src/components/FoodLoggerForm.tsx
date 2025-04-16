@@ -29,10 +29,16 @@ interface FoodLoggerFormProps {
   onChange?: (data: FoodFormData) => void;
   onSuccess?: () => void;
   onClose?: () => void;
-  onSubmit?: (mealDetail: string) => void;
+  onAddMeal?: (details: string) => void;
 }
 
-const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => {
+const FoodLoggerForm = ({
+  value,
+  onChange,
+  onSuccess,
+  onClose,
+  onAddMeal,
+}: FoodLoggerFormProps) => {
   const { control, handleSubmit, watch, reset, setValue } = useForm<FoodFormData>({
     defaultValues: value ?? {
       foodName: '',
@@ -42,7 +48,6 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
     },
   });
 
-  // Keep form in sync with parent value if provided
   useEffect(() => {
     if (value) {
       Object.entries(value).forEach(([key, val]) =>
@@ -58,29 +63,26 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
   const estimatedCalories = protein * 4 + carbs * 4 + fats * 9;
   const [open, setOpen] = useState(false);
 
-  const internalSubmit = async (data: FoodFormData) => {
+  const onSubmit = async (data: FoodFormData) => {
+    const details = `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`;
     const payload = {
       date: getLocalDateString(),
       type: 'Food',
-      details: `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`,
+      details,
       calories: estimatedCalories,
     };
 
     const { status } = await fetchApi('POST', '/api/logs', payload);
+
     if (status === 200 || status === 201) {
-      setOpen(true);
       reset();
       onSuccess?.();
+      onAddMeal?.(details);
+
+      if (!onChange) setOpen(true);
+      onClose?.();
     } else {
       alert('Failed to log entry.');
-    }
-  };
-
-  const onSubmit = async (data: FoodFormData) => {
-    if (onChange) {
-      onChange(data); // let parent handle it
-    } else {
-      await internalSubmit(data);
     }
   };
 
@@ -112,6 +114,7 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
                   />
                 )}
               />
+
               <Grid container spacing={2}>
                 <Grid>
                   <Controller
@@ -172,6 +175,7 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
               <Typography align="center" fontWeight="bold">
                 Estimated Calories: {estimatedCalories} kcal
               </Typography>
+
               <Button type="submit" variant="contained" size="large">
                 Log Meal
               </Button>
@@ -179,6 +183,7 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
           </Box>
         </Paper>
       </motion.div>
+
       {!onChange && (
         <Snackbar
           open={open}
