@@ -1,165 +1,260 @@
+import {
+  Paper,
+  Typography,
+  Stack,
+  TextField,
+  Button,
+  IconButton,
+  Dialog,
+} from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Delete, Edit, Done, DragHandle } from '@mui/icons-material';
+import FoodLoggerForm from './FoodLoggerForm';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
-  import {
-    Paper,
-    Typography,
-    Box,
-    List,
-    ListItem,
-    ListItemText,
-    TextField,
-    Button,
-    IconButton,
-    Stack,
-    Select,
-    MenuItem,
-    Checkbox,
-    Chip,
-  } from '@mui/material';
-  import { Edit, Delete, Save } from '@mui/icons-material';
-  import { useState } from 'react';
+export interface PlannerItem {
+  id: string;
+  text: string;
+  type: 'Meal' | 'Work' | 'Errand' | 'Other';
+  completed: boolean;
+}
 
-  type PlannerItemType = 'Meal' | 'Task' | 'Workout';
+interface Props {
+  label: string;
+  items: PlannerItem[];
+  onAdd: (item: PlannerItem) => void;
+  onUpdate: (index: number, item: PlannerItem) => void;
+  onDelete: (index: number) => void;
+}
 
-  export interface PlannerItem {
-    id: string;
-    type: PlannerItemType;
-    text: string;
-    completed: boolean;
-  }
+const SortableTask = ({
+  item,
+  index,
+  editingIndex,
+  editText,
+  setEditingIndex,
+  setEditText,
+  onUpdate,
+  onDelete,
+}: any) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
 
-  interface Props {
-    label: string;
-    icon: string;
-    items: PlannerItem[];
-    onAdd: (item: PlannerItem) => void;
-    onUpdate?: (index: number, newItem: PlannerItem) => void;
-    onDelete?: (index: number) => void;
-  }
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    cursor: 'grab',
+    opacity: isDragging ? 0.8 : 1,
+  };
 
-  const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) => {
-    const [input, setInput] = useState('');
-    const [type, setType] = useState<PlannerItemType>('Task');
-    const [editingIndex, setEditingIndex] = useState<number | null>(null);
-    const [editValue, setEditValue] = useState('');
-    const [editType, setEditType] = useState<PlannerItemType>('Task');
+  return (
+    <Stack
+      ref={setNodeRef}
+      style={style}
+      direction="row"
+      alignItems="center"
+      justifyContent="space-between"
+      sx={{
+        p: 1.5,
+        border: '1px solid #ddd',
+        borderRadius: 2,
+        bgcolor: item.completed ? '#f0f0f0' : 'inherit',
+        textDecoration: item.completed ? 'line-through' : 'none',
+      }}
+    >
+      {editingIndex === index ? (
+        <>
+          <TextField
+            fullWidth
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                onUpdate(index, { ...item, text: editText });
+                setEditingIndex(null);
+              }
+            }}
+          />
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              onUpdate(index, { ...item, text: editText });
+              setEditingIndex(null); // ✅ Exit editing mode
+              setEditText('');
+            }}
+          >
+            <Done />
+          </IconButton>
 
-    const handleAdd = () => {
-      if (!input.trim()) return;
-      onAdd({
-        id: Date.now().toString(),
-        text: input.trim(),
-        type,
-        completed: false,
-      });
-      setInput('');
-      setType('Task');
+        </>
+      ) : (
+        <>
+          {/* 👇 Only this part is draggable */}
+          <Typography
+            sx={{ flexGrow: 1, cursor: 'grab' }}
+            {...attributes}
+            {...listeners}
+          >
+            {item.text} ({item.type})
+          </Typography>
+
+          <Stack direction="row" spacing={1}>
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditingIndex(index);
+                setEditText(item.text);
+              }}
+            >
+              <Edit />
+            </IconButton>
+            <IconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(index);
+              }}
+            >
+              <Delete />
+            </IconButton>
+          </Stack>
+        </>
+      )}
+    </Stack>
+  );
+};
+
+const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) => {
+  const [text, setText] = useState('');
+  const [type, setType] = useState<PlannerItem['type']>('Other');
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editText, setEditText] = useState('');
+  const [showMealForm, setShowMealForm] = useState(false);
+
+  useEffect(() => {
+    setShowMealForm(type === 'Meal');
+  }, [type]);
+
+  const handleAdd = () => {
+    if (!text.trim()) return;
+    const newItem: PlannerItem = {
+      id: Date.now().toString(),
+      text,
+      type,
+      completed: false,
     };
 
-    const handleSaveEdit = (index: number) => {
-      if (!editValue.trim() || !onUpdate) return;
-      onUpdate(index, {
-        ...items[index],
-        text: editValue.trim(),
-        type: editType,
-      });
-      setEditingIndex(null);
-      setEditValue('');
-    };
+    if (type === 'Meal') {
+      setShowMealForm(true);
+      return;
+    }
 
-    return (
-      <Paper sx={{ p: 3, borderRadius: 1, borderStyle: 'dashed', borderColor: 'lightGray' }} elevation={2}>
+    onAdd(newItem);
+    setText('');
+    setType('Other');
+  };
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = items.findIndex((i) => i.id === active.id);
+    const newIndex = items.findIndex((i) => i.id === over.id);
+
+    const newOrder = arrayMove(items, oldIndex, newIndex);
+    newOrder.forEach((item, i) => onUpdate(i, item));
+  };
+
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  return (
+    <Paper sx={{ p: 3 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6" gutterBottom>
           {label}
         </Typography>
 
-        <Stack direction="row" spacing={2} mb={2}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Add item"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <Select
-            value={type}
-            onChange={(e) => setType(e.target.value as PlannerItemType)}
-            size="small"
-          >
-            <MenuItem value="Task">Task</MenuItem>
-            <MenuItem value="Meal">Meal</MenuItem>
-            <MenuItem value="Workout">Workout</MenuItem>
-          </Select>
-          <Button variant="contained" onClick={handleAdd}>
-            Add
-          </Button>
-        </Stack>
-
-        <List>
-          {items.map((item, idx) => (
-            <ListItem
-              key={item.id}
-              secondaryAction={
-                <>
-                  {editingIndex === idx ? (
-                    <IconButton edge="end" onClick={() => handleSaveEdit(idx)}>
-                      <Save />
-                    </IconButton>
-                  ) : (
-                    <IconButton edge="end" onClick={() => {
-                      setEditingIndex(idx);
-                      setEditValue(item.text);
-                      setEditType(item.type);
-                    }}>
-                      <Edit />
-                    </IconButton>
-                  )}
-                  <IconButton edge="end" onClick={() => onDelete?.(idx)}>
-                    <Delete />
-                  </IconButton>
-                </>
-              }
+        <Stack direction="row" spacing={1}>
+          {['Meal', 'Work', 'Errand', 'Other'].map((option) => (
+            <Button
+              key={option}
+              variant={type === option ? 'contained' : 'outlined'}
+              onClick={() => setType(option as PlannerItem['type'])}
             >
-              <Checkbox
-                checked={item.completed}
-                onChange={() =>
-                  onUpdate?.(idx, { ...item, completed: !item.completed })
-                }
-              />
-              {editingIndex === idx ? (
-                <>
-                  <TextField
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    size="small"
-                    sx={{ mr: 2 }}
-                  />
-                  <Select
-                    value={editType}
-                    onChange={(e) => setEditType(e.target.value as PlannerItemType)}
-                    size="small"
-                  >
-                    <MenuItem value="Task">Task</MenuItem>
-                    <MenuItem value="Meal">Meal</MenuItem>
-                    <MenuItem value="Workout">Workout</MenuItem>
-                  </Select>
-                </>
-              ) : (
-                <ListItemText
-                  primary={
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Chip label={item.type} size="small" />
-                      <span style={{ textDecoration: item.completed ? 'line-through' : 'none' }}>
-                        {item.text}
-                      </span>
-                    </Box>
-                  }
-                />
-              )}
-            </ListItem>
+              +{option}
+            </Button>
           ))}
-        </List>
-      </Paper>
-    );
-  };
+        </Stack>
+      </Stack>
 
-  export default TimeBlockSection;
+      <Stack direction="row" spacing={2} mb={2} alignItems="center">
+        <TextField
+          fullWidth
+          disabled={type === 'Meal'}
+          label="Task"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <Button variant="contained" onClick={handleAdd}>
+          Add
+        </Button>
+      </Stack>
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+          <Stack spacing={1}>
+            {items.map((item, index) => (
+              <SortableTask
+                key={item.id}
+                item={item}
+                index={index}
+                editingIndex={editingIndex}
+                editText={editText}
+                setEditingIndex={setEditingIndex}
+                setEditText={setEditText}
+                onUpdate={onUpdate}
+                onDelete={onDelete}
+              />
+            ))}
+          </Stack>
+        </SortableContext>
+      </DndContext>
+
+      <Dialog open={showMealForm} onClose={() => setShowMealForm(false)} maxWidth="sm" fullWidth>
+        <FoodLoggerForm
+          onClose={() => setShowMealForm(false)}
+          onSubmit={(foodDetail: string) => {
+            const newItem: PlannerItem = {
+              id: Date.now().toString(),
+              text: foodDetail,
+              type: 'Meal',
+              completed: false,
+            };
+            onAdd(newItem);
+            setShowMealForm(false);
+          }}
+        />
+      </Dialog>
+    </Paper>
+  );
+};
+
+export default TimeBlockSection;

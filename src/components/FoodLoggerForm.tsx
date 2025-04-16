@@ -28,6 +28,8 @@ interface FoodLoggerFormProps {
   value?: FoodFormData;
   onChange?: (data: FoodFormData) => void;
   onSuccess?: () => void;
+  onClose?: () => void;
+  onSubmit?: (mealDetail: string) => void;
 }
 
 const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => {
@@ -52,10 +54,8 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
   const protein = Number(watch('protein')) || 0;
   const carbs = Number(watch('carbs')) || 0;
   const fats = Number(watch('fats')) || 0;
-  const foodName = watch('foodName');
 
   const estimatedCalories = protein * 4 + carbs * 4 + fats * 9;
-
   const [open, setOpen] = useState(false);
 
   const internalSubmit = async (data: FoodFormData) => {
@@ -112,7 +112,6 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
                   />
                 )}
               />
-
               <Grid container spacing={2}>
                 <Grid>
                   <Controller
@@ -173,7 +172,6 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
               <Typography align="center" fontWeight="bold">
                 Estimated Calories: {estimatedCalories} kcal
               </Typography>
-
               <Button type="submit" variant="contained" size="large">
                 Log Meal
               </Button>
@@ -181,7 +179,6 @@ const FoodLoggerForm = ({ value, onChange, onSuccess }: FoodLoggerFormProps) => 
           </Box>
         </Paper>
       </motion.div>
-
       {!onChange && (
         <Snackbar
           open={open}
