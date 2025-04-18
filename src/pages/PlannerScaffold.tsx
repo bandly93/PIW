@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Container,
   Typography,
@@ -8,7 +9,6 @@ import {
   Box,
   TextField,
 } from '@mui/material'
-import { useState } from 'react'
 import TimeBlockSections, { PlannerItem } from '../components/TimeBlockSections'
 import {
   Edit,
@@ -42,12 +42,27 @@ interface PlannerBlock {
 }
 
 const PlannerScaffold = () => {
-  const [blocks, setBlocks] = useState<PlannerBlock[]>([
-    { id: uuidv4(), label: '1', items: [] },
-  ])
-  const [activeIndex, setActiveIndex] = useState(0)
+  const [blocks, setBlocks] = useState<PlannerBlock[]>(() => {
+    const stored = localStorage.getItem('plannerBlocks');
+    return stored ? JSON.parse(stored) : [{ id: uuidv4(), label: '1', items: [] }];
+  });
+  
+  const [activeTabIndex, setActiveTabIndex] = useState(0)
 
   const sensors = useSensors(useSensor(PointerSensor))
+
+  useEffect(() => {
+    const stored = localStorage.getItem('plannerBlocks');
+    if (stored) {
+      setBlocks(JSON.parse(stored));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('plannerBlocks', JSON.stringify(blocks));
+  }, [blocks]);
+
+  /* Handlers for tab and block logic*/
 
   const handleAddBlock = () => {
     const newBlock = {
@@ -56,7 +71,7 @@ const PlannerScaffold = () => {
       items: [],
     }
     setBlocks((prev) => [...prev, newBlock])
-    setActiveIndex(blocks.length)
+    setActiveTabIndex(blocks.length)
   }
 
   const handleDuplicateBlock = (index: number) => {
@@ -67,8 +82,40 @@ const PlannerScaffold = () => {
       items: original.items.map((item) => ({ ...item, id: uuidv4() })),
     }
     setBlocks((prev) => [...prev, duplicated])
-    setActiveIndex(blocks.length)
+    setActiveTabIndex(blocks.length)
   }
+
+  const deleteBlock = (index: number) => {
+    const updated = blocks.filter((_, i) => i !== index)
+    setBlocks(updated)
+    setActiveTabIndex((prev) => (prev === index ? 0 : prev > index ? prev - 1 : prev))
+  }
+
+  const updateBlockLabel = (index: number, newLabel: string) => {
+    setBlocks((prev) =>
+      prev.map((block, i) =>
+        i === index ? { ...block, label: newLabel, editing: false } : block
+      )
+    )
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = blocks.findIndex((b) => b.id === active.id)
+    const newIndex = blocks.findIndex((b) => b.id === over.id)
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = [...blocks]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+      setBlocks(reordered)
+      setActiveTabIndex(newIndex)
+    }
+  }
+
+  /* Handlers for item logic */
 
   const handleUpdateItem = (
     index: number,
@@ -99,43 +146,12 @@ const PlannerScaffold = () => {
       )
     )
   }
-
-  const updateBlockLabel = (index: number, newLabel: string) => {
-    setBlocks((prev) =>
-      prev.map((block, i) =>
-        i === index ? { ...block, label: newLabel, editing: false } : block
-      )
-    )
-  }
-
-  const deleteBlock = (index: number) => {
-    const updated = blocks.filter((_, i) => i !== index)
-    setBlocks(updated)
-    setActiveIndex((prev) => (prev === index ? 0 : prev > index ? prev - 1 : prev))
-  }
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const oldIndex = blocks.findIndex((b) => b.id === active.id)
-    const newIndex = blocks.findIndex((b) => b.id === over.id)
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const reordered = [...blocks]
-      const [moved] = reordered.splice(oldIndex, 1)
-      reordered.splice(newIndex, 0, moved)
-      setBlocks(reordered)
-      setActiveIndex(newIndex)
-    }
-  }
-
+ 
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
-      <Typography variant="h5" align="center" gutterBottom>
-        Daily Planner Tabs
+      <Typography variant="h4" align="center" gutterBottom>
+        Planner Scaffold
       </Typography>
-
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Box
           sx={{
@@ -153,8 +169,8 @@ const PlannerScaffold = () => {
                     key={block.id}
                     block={block}
                     index={index}
-                    isActive={activeIndex === index}
-                    onClick={() => setActiveIndex(index)}
+                    isActive={activeTabIndex === index}
+                    onClick={() => setActiveTabIndex(index)}
                   />
                 ))}
               </Box>
@@ -166,7 +182,7 @@ const PlannerScaffold = () => {
         </Button>
       </Stack>
       {blocks.map((block, index) => (
-        <Box key={block.id} hidden={index !== activeIndex}>
+        <Box key={block.id} hidden={index !== activeTabIndex}>
           <Paper sx={{ p: 3, mt: 2 }}>
             <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
               {block.editing ? (
