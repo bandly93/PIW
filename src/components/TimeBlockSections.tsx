@@ -78,8 +78,10 @@ const SortableTask = ({
         p: 1.5,
         border: '1px solid #ddd',
         borderRadius: 2,
-        bgcolor: item.completed ? '#f0f0f0' : 'inherit',
+        bgcolor: item.completed ? 'action.selected' : 'background.paper',
+        color: item.completed ? 'text.primary' : 'inherit',
         textDecoration: item.completed ? 'line-through' : 'none',
+
       }}
     >
       {editingIndex === index ? (
@@ -125,7 +127,6 @@ const SortableTask = ({
               {item.text} ({item.type})
             </Typography>
           </Stack>
-
           <Stack direction="row" spacing={1}>
             <IconButton
               onClick={(e) => {
@@ -256,6 +257,7 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
         }}
         maxWidth="sm"
         fullWidth
+        PaperProps={{ sx: { pb: 4 } }} // ✅ fix bottom padding
       >
         <FoodLoggerForm
           onClose={() => {
@@ -275,7 +277,6 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
           }}
         />
       </Dialog>
-
     </Paper >
   );
 };
