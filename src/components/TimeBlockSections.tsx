@@ -8,7 +8,7 @@ import {
   Dialog,
 } from '@mui/material';
 import { useState, useEffect } from 'react';
-import { Delete, Edit, Done, DragHandle } from '@mui/icons-material';
+import { Delete, Edit, Done } from '@mui/icons-material';
 import FoodLoggerForm from './FoodLoggerForm';
 import {
   DndContext,
@@ -110,13 +110,21 @@ const SortableTask = ({
       ) : (
         <>
           {/* 👇 Only this part is draggable */}
-          <Typography
-            sx={{ flexGrow: 1, cursor: 'grab' }}
-            {...attributes}
-            {...listeners}
-          >
-            {item.text} ({item.type})
-          </Typography>
+          <Stack direction="row" alignItems="center" spacing={2} sx={{ flexGrow: 1 }}>
+            <input
+              type="checkbox"
+              checked={item.completed}
+              onChange={() => onUpdate(index, { ...item, completed: !item.completed })}
+              style={{ cursor: 'pointer' }}
+            />
+            <Typography
+              {...attributes}
+              {...listeners}
+              sx={{ cursor: 'grab', flexGrow: 1 }}
+            >
+              {item.text} ({item.type})
+            </Typography>
+          </Stack>
 
           <Stack direction="row" spacing={1}>
             <IconButton
@@ -159,21 +167,21 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
       setShowMealForm(true);
       return;
     }
-  
+
     if (!text.trim()) return;
-  
+
     const newItem: PlannerItem = {
       id: Date.now().toString(),
       text,
       type,
       completed: false,
     };
-  
+
     onAdd(newItem);
     setText('');
     setType('Other');
   };
-  
+
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
@@ -194,7 +202,6 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
         <Typography variant="h6" gutterBottom>
           {label}
         </Typography>
-
         <Stack direction="row" spacing={1}>
           {['Meal', 'Work', 'Errand', 'Other'].map((option) => (
             <Button
@@ -207,7 +214,6 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
           ))}
         </Stack>
       </Stack>
-
       <Stack direction="row" spacing={2} mb={2} alignItems="center">
         <TextField
           fullWidth
@@ -220,7 +226,6 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
           Add
         </Button>
       </Stack>
-
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           <Stack spacing={1}>
@@ -240,15 +245,23 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
           </Stack>
         </SortableContext>
       </DndContext>
-
+      <Typography variant="body2" align="right" sx={{ mt: 2 }}>
+        Completed: {items.filter((item) => item.completed).length} / {items.length}
+      </Typography>
       <Dialog
         open={showMealForm}
-        onClose={() => setShowMealForm(false)}
+        onClose={() => {
+          setShowMealForm(false);
+          setType('Other'); // ✅ Reset type on close
+        }}
         maxWidth="sm"
         fullWidth
       >
         <FoodLoggerForm
-          onClose={() => setShowMealForm(false)}
+          onClose={() => {
+            setShowMealForm(false);
+            setType('Other'); // ✅ Reset type on close
+          }}
           onAddMeal={(details: string) => {
             const newItem: PlannerItem = {
               id: Date.now().toString(),
@@ -263,8 +276,7 @@ const TimeBlockSection = ({ label, items, onAdd, onUpdate, onDelete }: Props) =>
         />
       </Dialog>
 
-
-    </Paper>
+    </Paper >
   );
 };
 
