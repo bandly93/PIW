@@ -18,9 +18,8 @@ const NavBar = () => {
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" component={Link} to="/dashboard" sx={{ flexGrow: 1, textDecoration: 'none', color: 'inherit' }}>
-          Fitness Tracker
+          PIW
         </Typography>
-
         {isAuthenticated ? (
           <Box display="flex" alignItems="center" gap={2}>
             <Typography variant="body1">
