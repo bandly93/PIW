@@ -36,6 +36,10 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'plannerId is required' });
   }
 
+  if (!text || text.trim() === '') {
+    return res.status(400).json({ error: 'Task name cannot be empty' });
+  }
+
   try {
     // Determine the current number of tasks to set the `order` field
     const taskCount = await Task.count({ where: { plannerId } });
@@ -58,6 +62,12 @@ router.post('/', async (req, res) => {
 
 // PUT update a task
 router.put('/:id', async (req, res) => {
+  const { text } = req.body;
+
+  if (!text || text.trim() === '') {
+    return res.status(400).json({ error: 'Task name cannot be empty' });
+  }
+
   try {
     const task = await Task.findByPk(req.params.id);
     if (!task) return res.status(404).send('Task not found');

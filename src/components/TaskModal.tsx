@@ -13,6 +13,7 @@ interface Props {
   editTask?: PlannerItem | null;
   setTaskList: any;
   onEditTask: (task: PlannerItem) => void;
+  setEditTask: (task: PlannerItem | null) => void;
 }
 
 const TaskModal = ({
@@ -24,12 +25,13 @@ const TaskModal = ({
   notes,
   handleSave,
   setTaskList,
-  onEditTask
+  setEditTask
 }: Props) => {
 
   const handleOnClose = () => {
     setShowModal(false);
     setPlannerItem({ text: '', type: 'Other', notes: '' });
+    setEditTask(null);
   }
 
   return (
@@ -74,6 +76,7 @@ const TaskModal = ({
           <Button
             variant="contained"
             onClick={handleSave}
+            disabled={!text.trim()}
             sx={{ alignSelf: 'flex-end' }}
           >
             Save

@@ -58,6 +58,9 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
   const [taskList, setTaskList] = useState<PlannerItem[]>([]);
   const dispatch = useDispatch();
 
+  console.log(editTask, 'editTask');
+  console.log(plannerItem, 'plannerItem');
+
   const { text, type, notes, completed } = plannerItem;
 
   useEffect(() => {
@@ -124,14 +127,20 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
   };
 
   const handleSave = async () => {
+    if (!plannerItem.text.trim()) {
+      alert('Task name cannot be empty!');
+      return;
+    }
+
     if (editTask) {
       await onEditTask(plannerItem);
       setEditTask(null);
     } else {
       await handleAdd();
     }
-    setPlannerItem(initialTask);
-    setShowModal(false);
+
+    setPlannerItem(initialTask); // Reset the form
+    setShowModal(false); // Close the modal
   };
 
   const onDeleteTask = async (taskId: string) => {
@@ -203,6 +212,7 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
         editTask={editTask}
         onEditTask={onEditTask}
         setTaskList={setTaskList}
+        setEditTask={setEditTask}
       />
     </Paper>
   );
