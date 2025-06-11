@@ -16,6 +16,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { getLocalDateString } from '../utils/getLocalDateString';
 import { fetchApi } from '../utils/fetch';
+import { PlannerItem } from './TimeBlockSections';
 
 export interface FoodFormData {
   foodName: string;
@@ -29,7 +30,7 @@ interface FoodLoggerFormProps {
   onChange?: (data: FoodFormData) => void;
   onSuccess?: () => void;
   onClose?: () => void;
-  onAddMeal?: (details: string) => void;
+  onAddMeal?: (data: PlannerItem) => void;
 }
 
 const FoodLoggerForm = ({
@@ -65,19 +66,39 @@ const FoodLoggerForm = ({
 
   const onSubmit = async (data: FoodFormData) => {
     const details = `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`;
+    const date = getLocalDateString();
+
     const payload = {
-      date: getLocalDateString(),
+      date,
       type: 'Food',
       details,
       calories: estimatedCalories,
     };
 
-    const { status } = await fetchApi('POST', '/api/logs', payload);
+    const logRes = await fetchApi('POST', '/api/logs', payload);
 
-    if (status === 200 || status === 201) {
+    // 👇 New: also log as a Planner Task
+    const plannerRes = await fetchApi('GET', `/api/planners?date=${date}`);
+    const plannerId = (plannerRes?.data as { id?: string })?.id;
+
+    let taskResData = null;
+    if (plannerId) {
+      const taskPayload = {
+        text: details, // Use details as the task name
+        type: 'Meal',
+        completed: false,
+        notes: details,
+        plannerId,
+      };
+
+      const taskRes = await fetchApi('POST', '/api/tasks', taskPayload);
+      taskResData = taskRes?.data; // Capture the resolved task data
+    }
+
+    if (logRes.status === 200 || logRes.status === 201) {
       reset();
       onSuccess?.();
-      onAddMeal?.(details);
+      onAddMeal?.((taskResData || logRes?.data) as PlannerItem); // Explicitly cast to PlannerItem
 
       if (!onChange) setOpen(true);
       onClose?.();

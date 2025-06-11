@@ -41,7 +41,15 @@ const registerHandler = async (req, res) => {
     if (existing) return res.status(400).json({ message: 'Email already registered' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashedPassword, name });
+    const user = await User.create({
+      email,
+      name,
+      password: hashedPassword,
+      calorieGoal: 2000,
+      proteinGoal: 150,
+      carbGoal: 200,
+      fatGoal: 70,
+    });    
 
     const token = jwt.sign({ id: user.id, email }, JWT_SECRET, { expiresIn: JWT_EXPIRESIN });
 

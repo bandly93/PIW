@@ -5,25 +5,26 @@ import { PlannerItem } from './TimeBlockSections';
 interface Props {
   showModal: boolean;
   setShowModal: (value: boolean) => void;
-  onAdd: (value: PlannerItem) => void;
   text: string;
-  setText: (value: string) => void;
-  setNotes: (value: string) => void;
+  setPlannerItem: (value: Object) => void;
   notes: string;
   taskType: string;
-  handleAdd: () => void;
+  handleSave: () => void;
+  editTask?: PlannerItem | null;
+  setTaskList: any;
+  onEditTask: (task: PlannerItem) => void;
 }
 
 const TaskModal = ({
   setShowModal,
   showModal,
-  onAdd,
-  setText,
+  setPlannerItem,
   text,
   taskType,
   notes,
-  setNotes,
-  handleAdd
+  handleSave,
+  setTaskList,
+  onEditTask
 }: Props) => {
   return (
     <Dialog
@@ -31,22 +32,15 @@ const TaskModal = ({
       onClose={() => setShowModal(false)}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { pb: 4 } }} // ✅ fix bottom padding
+      PaperProps={{ sx: { pb: 4 } }}
     >
       {taskType === 'Meal' ? (
         <FoodLoggerForm
           onClose={() => {
             setShowModal(false);
           }}
-          onAddMeal={(details: string) => {
-            const newItem: PlannerItem = {
-              id: Date.now().toString(),
-              text: details,
-              type: 'Meal',
-              completed: false,
-              notes: ''
-            };
-            onAdd(newItem);
+          onAddMeal={(newMealItem: PlannerItem) => {
+            setTaskList((prev: PlannerItem[]) => [...prev, newMealItem]);
             setShowModal(false);
           }}
         />
@@ -62,7 +56,7 @@ const TaskModal = ({
             fullWidth
             label="Task Name"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => setPlannerItem({ text: e.target.value })}
           />
           <TextField
             fullWidth
@@ -71,11 +65,11 @@ const TaskModal = ({
             maxRows={4}
             label="Optional Notes"
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => setPlannerItem({ notes: e.target.value })}
           />
           <Button
             variant="contained"
-            onClick={handleAdd}
+            onClick={handleSave}
             sx={{ alignSelf: 'flex-end' }}
           >
             Save

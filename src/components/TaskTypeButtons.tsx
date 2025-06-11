@@ -11,7 +11,7 @@ const options = ['Meal', 'Work', 'Errand', 'Other']
 
 const TaskTypeButtons = ({ setTaskType, setShowModal, showModal}: Props) => {
   return (
-    <Stack direction="row" spacing={1}>
+    <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
       {options.map((option) => (
         <Button
           key={option}

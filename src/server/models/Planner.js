@@ -12,12 +12,10 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Planner.associate = (models) => {
-    Planner.hasMany(models.Task, {
-      foreignKey: 'plannerId',
-      as: 'tasks',
-      onDelete: 'CASCADE'
-    });
+    Planner.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+    Planner.hasMany(models.Task, { foreignKey: 'plannerId', as: 'tasks' });
   };
+  
 
   return Planner;
 };

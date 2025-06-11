@@ -36,8 +36,16 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const newLog = await Log.create({ ...req.body, userId: req.user.id });
-  res.status(201).json(newLog);
+  console.log('Request body:', req.body);
+  console.log('User:', req.user); // Ensure `userId` exists
+
+  try {
+    const newLog = await Log.create({ ...req.body, userId: req.user.id });
+    res.status(201).json(newLog);
+  } catch (err) {
+    console.error('Error creating log:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 module.exports = router;

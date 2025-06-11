@@ -7,19 +7,19 @@ import NoteIcon from '@mui/icons-material/Note';
 import { PlannerItem } from './TimeBlockSections';
 
 interface Props {
-  item: PlannerItem;
+  task: PlannerItem;
   index: number;
-  onUpdate: (index: number, item: PlannerItem) => void;
-  onDelete: (index: number) => void;
   openEditModal: (item: PlannerItem) => void;
+  onDeleteTask: (id: string) => void;
+  onEditTask: (task: PlannerItem) => void;
 }
 
 const SortableTask = ({
-  item,
+  task,
   index,
-  onUpdate,
-  onDelete,
   openEditModal,
+  onDeleteTask,
+  onEditTask,
 }: Props) => {
   const {
     attributes,
@@ -28,7 +28,7 @@ const SortableTask = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: task.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -39,10 +39,21 @@ const SortableTask = ({
 
   const [showNotes, setShowNotes] = useState(false);
 
+  const handleToggleCompleted = async () => {
+    const updatedTask = { ...task, completed: !task.completed };
+    try {
+      await onEditTask(updatedTask); // Call onEditTask with the updated task
+    } catch (error) {
+      console.error('Error toggling completed status:', error);
+    }
+  };
+
   return (
     <Stack spacing={0.5}>
       <Stack
         ref={setNodeRef}
+        {...attributes}
+        {...listeners}
         style={style}
         direction="row"
         alignItems="center"
@@ -51,16 +62,16 @@ const SortableTask = ({
           p: 1.5,
           border: '1px solid #ddd',
           borderRadius: 2,
-          bgcolor: item.completed ? 'action.selected' : 'background.paper',
-          color: item.completed ? 'text.primary' : 'inherit',
-          textDecoration: item.completed ? 'line-through' : 'none',
+          bgcolor: task.completed ? 'action.selected' : 'background.paper',
+          color: task.completed ? 'text.primary' : 'inherit',
+          textDecoration: task.completed ? 'line-through' : 'none',
         }}
       >
         <Stack direction="row" alignItems="center" spacing={2} sx={{ flexGrow: 1 }}>
           <input
             type="checkbox"
-            checked={item.completed}
-            onChange={() => onUpdate(index, { ...item, completed: !item.completed })}
+            checked={task.completed}
+            onChange={handleToggleCompleted} // Toggle completed status
             style={{ cursor: 'pointer' }}
           />
           <Typography
@@ -68,11 +79,11 @@ const SortableTask = ({
             {...listeners}
             sx={{ cursor: 'grab', flexGrow: 1 }}
           >
-            {item.text} ({item.type})
+            {task.text} ({task.type})
           </Typography>
         </Stack>
         <Stack direction="row" spacing={1}>
-          {item.notes && (
+          {task.notes && (
             <IconButton
               onClick={(e) => {
                 e.stopPropagation();
@@ -85,7 +96,7 @@ const SortableTask = ({
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
-              openEditModal(item);
+              openEditModal(task);
             }}
           >
             <Edit />
@@ -93,15 +104,14 @@ const SortableTask = ({
           <IconButton
             onClick={(e) => {
               e.stopPropagation();
-              onDelete(index);
+              onDeleteTask(task.id);
             }}
           >
             <Delete />
           </IconButton>
         </Stack>
       </Stack>
-
-      {showNotes && item.notes && (
+      {showNotes && task.notes && (
         <Box ml="5">
           <Typography
             variant="h5"
@@ -121,7 +131,7 @@ const SortableTask = ({
               whiteSpace: 'pre-wrap',
             }}
           >
-            {item.notes}
+            {task.notes}
           </Typography>
         </Box>
       )}

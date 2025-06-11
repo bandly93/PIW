@@ -4,12 +4,16 @@ module.exports = (sequelize, DataTypes) => {
     date: DataTypes.DATEONLY,
     type: DataTypes.STRING,
     details: DataTypes.TEXT,
-    calories: DataTypes.INTEGER,
+    calories: DataTypes.FLOAT,
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
     }
   });
+
+  Log.associate = (models) => {
+    Log.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+  };  
 
   return Log;
 };

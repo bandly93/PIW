@@ -2,18 +2,11 @@ import { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
-  Stack,
   Paper,
-  IconButton,
-  Button,
-  Box,
   TextField,
 } from '@mui/material';
-import TimeBlockSections, { PlannerItem } from '../components/TimeBlockSections';
+import TimeBlockSections from '../components/TimeBlockSections';
 import { fetchApi } from '../utils/fetch';
-import {
-  Edit, Done, Clear, ContentCopy, Add
-} from '@mui/icons-material';
 
 interface Planner {
   id: string;
@@ -54,7 +47,6 @@ const PlannerScaffold = () => {
       <Typography variant="h4" align="center" gutterBottom>
         Planner Scaffold
       </Typography>
-
       <TextField
         type="date"
         label="Select Date"
@@ -63,15 +55,9 @@ const PlannerScaffold = () => {
         sx={{ mb: 2 }}
         InputLabelProps={{ shrink: true }}
       />
-
       {planner && (
         <Paper sx={{ p: 3, mt: 2 }}>
           <TimeBlockSections
-            label={selectedDate}
-            items={[]} // placeholder, handled inside TimeBlockSections
-            onAdd={() => {}}
-            onUpdate={() => {}}
-            onDelete={() => {}}
             selectedDate={selectedDate}
             plannerId={planner.id}
           />

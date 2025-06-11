@@ -14,6 +14,16 @@ module.exports = (sequelize, DataTypes) => {
     completed: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
+    },
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    order: { // New field for task order
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     }
   });
 
