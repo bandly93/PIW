@@ -85,7 +85,6 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
       text,
       type,
       completed,
-      date: selectedDate,
       notes,
       plannerId,
       order: taskList.length, // Set order based on the current task count
@@ -152,32 +151,6 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
     }
   };
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-
-    if (active.id !== over?.id) {
-      setTaskList((prevTasks) => {
-        const oldIndex = prevTasks.findIndex((task) => task.id === active.id);
-        const newIndex = prevTasks.findIndex((task) => task.id === over?.id);
-
-        const updatedTasks = [...prevTasks];
-        const [movedTask] = updatedTasks.splice(oldIndex, 1);
-        updatedTasks.splice(newIndex, 0, movedTask);
-
-        // Update the order field for all tasks
-        const reorderedTasks = updatedTasks.map((task, index) => ({
-          ...task,
-          order: index,
-        }));
-
-        // Send the reordered tasks to the backend
-        fetchApi('PUT', '/api/tasks/reorder', reorderedTasks);
-
-        return reorderedTasks;
-      });
-    }
-  };
-
   const sensors = useSensors(useSensor(PointerSensor));
 
   return (
@@ -190,10 +163,10 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd} // Add this line
+        onDragEnd={() => {}} // Add this line
       >
         <SortableContext
-          items={taskList.map((i) => i.id)}
+          items={taskList.map((i) => i.order)}
           strategy={verticalListSortingStrategy}
         >
           <Stack spacing={1}>

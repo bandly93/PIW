@@ -26,22 +26,26 @@ const TaskModal = ({
   setTaskList,
   onEditTask
 }: Props) => {
+
+  const handleOnClose = () => {
+    setShowModal(false);
+    setPlannerItem({ text: '', type: 'Other', notes: '' });
+  }
+
   return (
     <Dialog
       open={showModal}
-      onClose={() => setShowModal(false)}
+      onClose={() => handleOnClose()}
       maxWidth="sm"
       fullWidth
       PaperProps={{ sx: { pb: 4 } }}
     >
       {taskType === 'Meal' ? (
         <FoodLoggerForm
-          onClose={() => {
-            setShowModal(false);
-          }}
+          onClose={() => handleOnClose()}
           onAddMeal={(newMealItem: PlannerItem) => {
             setTaskList((prev: PlannerItem[]) => [...prev, newMealItem]);
-            setShowModal(false);
+            handleOnClose()
           }}
         />
       ) : (

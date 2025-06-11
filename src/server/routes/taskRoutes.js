@@ -10,7 +10,11 @@ router.get('/', async (req, res) => {
   try {
     const planner = await Planner.findOne({
       where: { date },
-      include: { model: Task, as: 'tasks' }
+      include: {
+        model: Task,
+        as: 'tasks',
+        order: [['order', 'ASC']], // Ensure tasks are ordered by the `order` field
+      },
     });
 
     if (!planner) {
@@ -24,18 +28,27 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST new task (auto-create planner if needed)
+// POST new task
 router.post('/', async (req, res) => {
-  const { date, ...taskData } = req.body;
+  const { text, type, notes, completed, plannerId } = req.body;
+
+  if (!plannerId) {
+    return res.status(400).json({ error: 'plannerId is required' });
+  }
 
   try {
-    let planner = await Planner.findOne({ where: { date } });
+    // Determine the current number of tasks to set the `order` field
+    const taskCount = await Task.count({ where: { plannerId } });
 
-    if (!planner) {
-      planner = await Planner.create({ date });
-    }
+    const task = await Task.create({
+      text,
+      type,
+      notes,
+      completed,
+      plannerId,
+      order: taskCount, // Set the order based on the current task count
+    });
 
-    const task = await Task.create({ ...taskData, plannerId: planner.id });
     return res.status(201).json(task);
   } catch (error) {
     console.error(error);
@@ -53,6 +66,30 @@ router.put('/:id', async (req, res) => {
     return res.json(task);
   } catch (error) {
     console.error(error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT reorder tasks
+router.put('/reorder', async (req, res) => {
+  console.log('Reorder payload:', req.body); // Log the incoming payload
+
+  const { tasks } = req.body;
+
+  if (!Array.isArray(tasks)) {
+    return res.status(400).json({ error: 'Invalid tasks format' });
+  }
+
+  try {
+    const updatePromises = tasks.map((task) =>
+      Task.update({ order: task.order }, { where: { id: task.id } })
+    );
+
+    await Promise.all(updatePromises);
+
+    return res.status(200).json({ message: 'Tasks reordered successfully' });
+  } catch (error) {
+    console.error('Error reordering tasks:', error);
     return res.status(500).json({ error: error.message });
   }
 });

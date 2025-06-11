@@ -52,8 +52,6 @@ const SortableTask = ({
     <Stack spacing={0.5}>
       <Stack
         ref={setNodeRef}
-        {...attributes}
-        {...listeners}
         style={style}
         direction="row"
         alignItems="center"
