@@ -1,3 +1,6 @@
+const { id } = require("date-fns/locale");
+
+// src/server/models/Task.js
 module.exports = (sequelize, DataTypes) => {
   const Task = sequelize.define('Task', {
     text: {
@@ -15,16 +18,23 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-    order: { // New field for task order
+    order: {
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
-    }
+    },
+    id: {
+      type: DataTypes.UUID,
+      primaryKey: true,
+      autoIncrement: true,
+      defaultValue: DataTypes.UUIDV4,
+    },
+
+    // 🔽 NEW: link to Food Log entry
+    logId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   });
 
   Task.associate = (models) => {

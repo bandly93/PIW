@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   Container,
-  Typography,
   Paper,
   TextField,
 } from '@mui/material';
@@ -22,12 +21,15 @@ const PlannerScaffold = () => {
 
   const [planner, setPlanner] = useState<Planner | null>(null);
 
+  /*  Load Planner otherwise create a planner if does not exist */
   useEffect(() => {
     async function loadPlanner() {
       const { data, status } = await fetchApi<Planner>(
         'GET',
         `/api/planners?date=${selectedDate}`
       );
+      
+      console.log('Planner fetch status:', status, data);
 
       if (status === 200 && data) {
         setPlanner(data);
@@ -38,22 +40,17 @@ const PlannerScaffold = () => {
         }
       }
     }
-
     loadPlanner();
   }, [selectedDate]);
 
   return (
     <Container maxWidth="md" sx={{ mt: 2 }}>
-      <Typography variant="h4" align="center" gutterBottom>
-        Planner Scaffold
-      </Typography>
       <TextField
         type="date"
         label="Select Date"
         value={selectedDate}
         onChange={(e) => setSelectedDate(e.target.value)}
         sx={{ mb: 2 }}
-        InputLabelProps={{ shrink: true }}
       />
       {planner && (
         <Paper sx={{ p: 3, mt: 2 }}>

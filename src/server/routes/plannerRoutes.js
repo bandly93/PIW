@@ -30,6 +30,8 @@ router.post('/', async (req, res) => {
 
     let planner = await Planner.findOne({ where: { date, userId } });
 
+    console.log(planner, 'existing planner');
+
     if (!planner) {
       planner = await Planner.create({ date, userId });
     }

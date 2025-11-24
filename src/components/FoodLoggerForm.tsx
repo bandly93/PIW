@@ -14,9 +14,9 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { getLocalDateString } from '../utils/getLocalDateString';
-import { fetchApi } from '../utils/fetch';
 import { PlannerItem } from './TimeBlockSections';
+import { fetchApi } from '../utils/fetch';
+import { getLocalDateString } from '../utils/getLocalDateString';
 
 export interface FoodFormData {
   foodName: string;
@@ -31,31 +31,62 @@ interface FoodLoggerFormProps {
   onSuccess?: () => void;
   onClose?: () => void;
   onAddMeal?: (data: PlannerItem) => void;
+  meal?: PlannerItem | null;
 }
 
-const FoodLoggerForm = ({
+export default function FoodLoggerForm({
   value,
   onChange,
   onSuccess,
   onClose,
   onAddMeal,
-}: FoodLoggerFormProps) => {
-  const { control, handleSubmit, watch, reset, setValue } = useForm<FoodFormData>({
-    defaultValues: value ?? {
+  meal = null,
+}: FoodLoggerFormProps) {
+  const { control, handleSubmit, setValue, reset, watch } = useForm<FoodFormData>({
+    defaultValues: value || {
       foodName: '',
-      protein: undefined,
-      carbs: undefined,
-      fats: undefined,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
     },
   });
 
-  useEffect(() => {
-    if (value) {
-      Object.entries(value).forEach(([key, val]) =>
-        setValue(key as keyof FoodFormData, val)
-      );
+  // Parse "Chicken - Protein: 30g, Carbs: 10g, Fats: 12g"
+  function parseDetails(details: string) {
+    const [foodNamePart, macrosPart] = details.split(' - ');
+    let protein, carbs, fats;
+
+    if (macrosPart) {
+      const macros = macrosPart.split(',').map((s) => s.trim());
+      macros.forEach((macro) => {
+        if (macro.startsWith('Protein:')) protein = Number(macro.replace(/[^0-9.]/g, ''));
+        if (macro.startsWith('Carbs:')) carbs = Number(macro.replace(/[^0-9.]/g, ''));
+        if (macro.startsWith('Fats:')) fats = Number(macro.replace(/[^0-9.]/g, ''));
+      });
     }
-  }, [value, setValue]);
+
+    return {
+      foodName: foodNamePart || '',
+      protein: protein || 0,
+      carbs: carbs || 0,
+      fats: fats || 0,
+    };
+  }
+
+  // When editing existing meal
+  useEffect(() => {
+    if (meal) {
+      const parsed = parseDetails(meal.notes || meal.text || '');
+      setValue('foodName', parsed.foodName);
+      setValue('protein', parsed.protein);
+      setValue('carbs', parsed.carbs);
+      setValue('fats', parsed.fats);
+    } else if (value) {
+      Object.entries(value).forEach(([key, val]) => {
+        setValue(key as keyof FoodFormData, val as any);
+      });
+    }
+  }, [meal, value, setValue]);
 
   const protein = Number(watch('protein')) || 0;
   const carbs = Number(watch('carbs')) || 0;
@@ -68,6 +99,50 @@ const FoodLoggerForm = ({
     const details = `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`;
     const date = getLocalDateString();
 
+    // ---------------------------
+    // EDIT EXISTING MEAL
+    // ---------------------------
+    if (meal && meal.id) {
+      const taskUpdatePayload = {
+        text: data.foodName,
+        type: 'Meal',
+        completed: meal.completed ?? false,
+        notes: details,
+        plannerId: meal.plannerId,
+        id: meal.id,
+        logId: meal.logId,
+      };
+
+      // Update Task
+      const taskRes = await fetchApi('PUT', `/api/tasks/${meal.id}`, taskUpdatePayload);
+
+      // Update Log (if linked)
+      let logResOk = true;
+      if (meal.logId) {
+        const logUpdatePayload = {
+          details,
+          calories: estimatedCalories,
+          type: 'Food',
+        };
+        const logRes = await fetchApi('PUT', `/api/logs/${meal.logId}`, logUpdatePayload);
+        logResOk = logRes.status === 200;
+      }
+
+      if (taskRes.status === 200 && taskRes.data && logResOk) {
+        onAddMeal?.(taskRes.data as PlannerItem);
+        onSuccess?.();
+        if (!onChange) setOpen(true);
+        onClose?.();
+        return;
+      } else {
+        alert('Failed to update meal.');
+        return;
+      }
+    }
+
+    // ---------------------------
+    // CREATE NEW MEAL
+    // ---------------------------
     const payload = {
       date,
       type: 'Food',
@@ -77,29 +152,31 @@ const FoodLoggerForm = ({
 
     const logRes = await fetchApi('POST', '/api/logs', payload);
 
-    // 👇 New: also log as a Planner Task
     const plannerRes = await fetchApi('GET', `/api/planners?date=${date}`);
     const plannerId = (plannerRes?.data as { id?: string })?.id;
 
     let taskResData = null;
-    if (plannerId) {
+
+    if (plannerId && (logRes.status === 200 || logRes.status === 201)) {
+      const createdLog = logRes.data as { id: number };
+
       const taskPayload = {
-        text: details, // Use details as the task name
+        text: data.foodName,
         type: 'Meal',
         completed: false,
         notes: details,
         plannerId,
+        logId: createdLog.id,
       };
 
       const taskRes = await fetchApi('POST', '/api/tasks', taskPayload);
-      taskResData = taskRes?.data; // Capture the resolved task data
+      taskResData = taskRes?.data;
     }
 
     if (logRes.status === 200 || logRes.status === 201) {
       reset();
       onSuccess?.();
-      onAddMeal?.((taskResData || logRes?.data) as PlannerItem); // Explicitly cast to PlannerItem
-
+      onAddMeal?.(taskResData as PlannerItem);
       if (!onChange) setOpen(true);
       onClose?.();
     } else {
@@ -109,35 +186,27 @@ const FoodLoggerForm = ({
 
   return (
     <Container maxWidth="sm">
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
+      <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <Paper sx={{ p: 4, mt: 4, borderRadius: 3 }} elevation={3}>
           <Typography variant="h5" gutterBottom align="center">
-            Log a Meal
+            {meal && meal.id ? 'Edit Meal' : 'Log a Meal'}
           </Typography>
 
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Stack spacing={3}>
+              {/* FOOD NAME */}
               <Controller
                 name="foodName"
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <TextField
-                    label="Food Name"
-                    fullWidth
-                    required
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                  />
+                  <TextField label="Food Name" fullWidth required value={field.value ?? ''} onChange={field.onChange} />
                 )}
               />
 
+              {/* MACROS */}
               <Grid container spacing={2}>
-                <Grid>
+                <Grid item xs={12} sm={4}>
                   <Controller
                     name="protein"
                     control={control}
@@ -148,14 +217,13 @@ const FoodLoggerForm = ({
                         fullWidth
                         value={field.value ?? ''}
                         onChange={field.onChange}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">g</InputAdornment>,
-                        }}
+                        InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
                       />
                     )}
                   />
                 </Grid>
-                <Grid>
+
+                <Grid item xs={12} sm={4}>
                   <Controller
                     name="carbs"
                     control={control}
@@ -166,14 +234,13 @@ const FoodLoggerForm = ({
                         fullWidth
                         value={field.value ?? ''}
                         onChange={field.onChange}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">g</InputAdornment>,
-                        }}
+                        InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
                       />
                     )}
                   />
                 </Grid>
-                <Grid>
+
+                <Grid item xs={12} sm={4}>
                   <Controller
                     name="fats"
                     control={control}
@@ -184,9 +251,7 @@ const FoodLoggerForm = ({
                         fullWidth
                         value={field.value ?? ''}
                         onChange={field.onChange}
-                        InputProps={{
-                          endAdornment: <InputAdornment position="end">g</InputAdornment>,
-                        }}
+                        InputProps={{ endAdornment: <InputAdornment position="end">g</InputAdornment> }}
                       />
                     )}
                   />
@@ -198,27 +263,18 @@ const FoodLoggerForm = ({
               </Typography>
 
               <Button type="submit" variant="contained" size="large">
-                Log Meal
+                {meal && meal.id ? 'Save Changes' : 'Log Meal'}
               </Button>
             </Stack>
           </Box>
         </Paper>
       </motion.div>
 
-      {!onChange && (
-        <Snackbar
-          open={open}
-          autoHideDuration={5000}
-          onClose={() => setOpen(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        >
-          <Alert severity="success" variant="filled" onClose={() => setOpen(false)}>
-            Meal logged successfully!
-          </Alert>
-        </Snackbar>
-      )}
+      <Snackbar open={open} autoHideDuration={5000} onClose={() => setOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity="success" variant="filled" onClose={() => setOpen(false)}>
+          Meal {meal && meal.id ? 'updated' : 'logged'} successfully!
+        </Alert>
+      </Snackbar>
     </Container>
   );
-};
-
-export default FoodLoggerForm;
+}

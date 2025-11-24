@@ -1,19 +1,28 @@
-import { Dialog, Stack, TextField, Button } from '@mui/material'
+import { Dialog, Stack, TextField, Button } from '@mui/material';
 import FoodLoggerForm from './FoodLoggerForm';
 import { PlannerItem } from './TimeBlockSections';
 
 interface Props {
   showModal: boolean;
   setShowModal: (value: boolean) => void;
+
+  // Current planner item state (for non-meal tasks)
   text: string;
-  setPlannerItem: (value: Object) => void;
   notes: string;
   taskType: string;
+
+  // State updater from TimeBlockSection
+  setPlannerItem: (value: Partial<PlannerItem>) => void;
+
+  // Generic save handler (non-meal)
   handleSave: () => void;
+
+  // Editing info
   editTask?: PlannerItem | null;
-  setTaskList: any;
-  onEditTask: (task: PlannerItem) => void;
   setEditTask: (task: PlannerItem | null) => void;
+
+  // Full task list state (for updating UI)
+  setTaskList: (fn: (prev: PlannerItem[]) => PlannerItem[]) => void;
 }
 
 const TaskModal = ({
@@ -25,29 +34,44 @@ const TaskModal = ({
   notes,
   handleSave,
   setTaskList,
-  setEditTask
+  editTask,
+  setEditTask,
 }: Props) => {
-
   const handleOnClose = () => {
     setShowModal(false);
+    // Reset the draft planner item
     setPlannerItem({ text: '', type: 'Other', notes: '' });
     setEditTask(null);
-  }
+  };
 
   return (
     <Dialog
       open={showModal}
-      onClose={() => handleOnClose()}
+      onClose={handleOnClose}
       maxWidth="sm"
       fullWidth
       PaperProps={{ sx: { pb: 4 } }}
     >
       {taskType === 'Meal' ? (
         <FoodLoggerForm
-          onClose={() => handleOnClose()}
+          onClose={handleOnClose}
+          meal={editTask ?? null}
           onAddMeal={(newMealItem: PlannerItem) => {
-            setTaskList((prev: PlannerItem[]) => [...prev, newMealItem]);
-            handleOnClose()
+            // FoodLoggerForm has already handled API calls.
+            // Here we only sync the UI task list.
+            setTaskList((prev) => {
+              const index = prev.findIndex((t) => t.id === newMealItem.id);
+              if (index === -1) {
+                // New meal task
+                return [...prev, newMealItem];
+              }
+              // Updated existing meal task
+              const next = [...prev];
+              next[index] = { ...next[index], ...newMealItem };
+              return next;
+            });
+
+            handleOnClose();
           }}
         />
       ) : (
@@ -84,7 +108,7 @@ const TaskModal = ({
         </Stack>
       )}
     </Dialog>
-  )
-}
+  );
+};
 
-export default TaskModal
+export default TaskModal;

@@ -30,13 +30,17 @@ router.get('/', async (req, res) => {
 
 // POST new task
 router.post('/', async (req, res) => {
-  const { text, type, notes, completed, plannerId } = req.body;
+  const { text, type, notes, completed, plannerId, logId } = req.body;
+
+  console.log('Creating task with data:', req.body);
 
   if (!plannerId) {
+    console.error('plannerId is required');
     return res.status(400).json({ error: 'plannerId is required' });
   }
 
   if (!text || text.trim() === '') {
+    console.error('Task name cannot be empty');
     return res.status(400).json({ error: 'Task name cannot be empty' });
   }
 
@@ -51,6 +55,7 @@ router.post('/', async (req, res) => {
       completed,
       plannerId,
       order: taskCount, // Set the order based on the current task count
+      logId: logId || null, // Link to Food Log entry if provided
     });
 
     return res.status(201).json(task);
