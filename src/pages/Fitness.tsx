@@ -11,6 +11,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  Stack,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -48,16 +49,17 @@ const Fitness = () => {
 
         const totals = data.reduce(
           (acc, log) => {
-            const match = log.details.match(/Protein: (\d+)g, Carbs: (\d+)g, Fats: (\d+)g/);
-            if (match) {
-              acc.protein += parseInt(match[1]);
-              acc.carbs += parseInt(match[2]);
-              acc.fats += parseInt(match[3]);
-            }
+            const match = log.details.match(/Protein: ([\d.]+)g, Carbs: ([\d.]+)g, Fats: ([\d.]+)g/);
+            if (!match) return acc;
+            acc.protein += parseFloat(match[1]);
+            acc.carbs += parseFloat(match[2]);
+            acc.fats += parseFloat(match[3]);
             return acc;
           },
           { protein: 0, carbs: 0, fats: 0 }
         );
+
+        console.log('Calculated macros:', totals);
 
         setMacros(totals);
       } catch (err) {
@@ -147,15 +149,39 @@ const Fitness = () => {
                 carbs={macros.carbs}
                 fats={macros.fats}
               />
+              <Typography
+                align="center"
+                sx={{ mt: 2, fontWeight: 600, fontSize: 18, color: '#388e3c' }}
+              >
+                Total Calories: {
+                  logs.reduce((sum, log) => sum + (typeof log.calories === 'number' ? log.calories : 0), 0).toFixed(1)
+                } kcal
+              </Typography>
             </Paper>
             {goals && (
-              <Box textAlign="center" mb={2}>
-                <Typography variant="subtitle1">Daily Goals:</Typography>
-                <Typography>Protein: {goals.proteinGoal}g</Typography>
-                <Typography>Carb: {goals.carbGoal}g</Typography>
-                <Typography>Fat: {goals.fatGoal}g</Typography>
-                <Typography>Calories: {goals.calorieGoal} kcal</Typography>
-              </Box>
+              <Paper elevation={2} sx={{ p: 3, mb: 3, maxWidth: 400, mx: 'auto', borderRadius: 2 }}>
+                <Typography variant="subtitle1" align="center" fontWeight="bold" gutterBottom>
+                  Daily Goals
+                </Typography>
+                <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
+                  <Stack alignItems="center">
+                    <Typography variant="body2" color="primary">Protein</Typography>
+                    <Typography fontWeight="bold">{goals.proteinGoal}g</Typography>
+                  </Stack>
+                  <Stack alignItems="center">
+                    <Typography variant="body2" color="secondary">Carbs</Typography>
+                    <Typography fontWeight="bold">{goals.carbGoal}g</Typography>
+                  </Stack>
+                  <Stack alignItems="center">
+                    <Typography variant="body2" color="warning.main">Fat</Typography>
+                    <Typography fontWeight="bold">{goals.fatGoal}g</Typography>
+                  </Stack>
+                  <Stack alignItems="center">
+                    <Typography variant="body2" color="success.main">Calories</Typography>
+                    <Typography fontWeight="bold">{goals.calorieGoal} kcal</Typography>
+                  </Stack>
+                </Stack>
+              </Paper>
             )}
             <Paper elevation={3}>
               <Table>
