@@ -24,7 +24,7 @@ const loginHandler = async (req, res) => {
 
     res.json({
       token,
-      user: { id: user.id, email },
+      user: { id: user.id, email, name: user.name },
     });
   } catch (err) {
     console.error('🔥 Login error:', err);
