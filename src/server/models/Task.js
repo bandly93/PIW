@@ -3,6 +3,12 @@ const { id } = require("date-fns/locale");
 // src/server/models/Task.js
 module.exports = (sequelize, DataTypes) => {
   const Task = sequelize.define('Task', {
+    id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
+      allowNull: false,
+    },
     text: {
       type: DataTypes.STRING,
       allowNull: false
@@ -23,14 +29,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 0,
     },
-    id: {
-      type: DataTypes.UUID,
-      primaryKey: true,
-      autoIncrement: true,
-      defaultValue: DataTypes.UUIDV4,
+    date: {
+      type: DataTypes.DATEONLY,  // YYYY-MM-DD format
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
     },
-
-    // 🔽 NEW: link to Food Log entry
     logId: {
       type: DataTypes.INTEGER,
       allowNull: true,

@@ -55,20 +55,33 @@ const TaskModal = ({
       {taskType === 'Meal' ? (
         <FoodLoggerForm
           onClose={handleOnClose}
+          // if FoodLoggerForm expects the whole PlannerItem for editing, this is fine
           meal={editTask ?? null}
           onAddMeal={(newMealItem: PlannerItem) => {
-            // FoodLoggerForm has already handled API calls.
-            // Here we only sync the UI task list.
             setTaskList((prev) => {
-              const index = prev.findIndex((t) => t.id === newMealItem.id);
-              if (index === -1) {
-                // New meal task
-                return [...prev, newMealItem];
+              // If we're editing an existing planner item, update that one
+              if (editTask) {
+                return prev.map((item) =>
+                  item.id === editTask.id
+                    ? {
+                        ...item,
+                        ...newMealItem,
+                        // ensure we keep the same id/time block, if needed
+                        id: editTask.id,
+                        type: 'Meal',
+                      }
+                    : item
+                );
               }
-              // Updated existing meal task
-              const next = [...prev];
-              next[index] = { ...next[index], ...newMealItem };
-              return next;
+
+              // Otherwise, we're adding a brand new meal task
+              return [
+                ...prev,
+                {
+                  ...newMealItem,
+                  type: 'Meal',
+                },
+              ];
             });
 
             handleOnClose();
@@ -76,12 +89,7 @@ const TaskModal = ({
         />
       ) : (
         <Stack spacing={2} p={3}>
-          <TextField
-            fullWidth
-            label="Task Type"
-            value={taskType}
-            disabled
-          />
+          <TextField fullWidth label="Task Type" value={taskType} disabled />
           <TextField
             fullWidth
             label="Task Name"

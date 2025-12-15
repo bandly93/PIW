@@ -92,6 +92,7 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
       notes,
       plannerId,
       order: taskList.length,
+      date: selectedDate, // 🔽 ADD THIS
     };
 
     try {
@@ -115,7 +116,10 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
       const response = await fetchApi(
         'PUT',
         `/api/tasks/${updatedTask.id}`,
-        updatedTask
+        {
+          ...updatedTask,
+          date: selectedDate, // 🔽 ADD THIS
+        }
       );
       if (response.status === 200 && response.data) {
         setTaskList((prevTasks) =>

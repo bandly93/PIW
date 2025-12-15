@@ -97,40 +97,24 @@ export default function FoodLoggerForm({
 
   const onSubmit = async (data: FoodFormData) => {
     const details = `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`;
-    const date = getLocalDateString();
+    const date = getLocalDateString(); // Get today's date in YYYY-MM-DD format
 
-    // ---------------------------
-    // EDIT EXISTING MEAL
-    // ---------------------------
     if (meal && meal.id) {
-      const taskUpdatePayload = {
+      // Editing existing meal/task
+      const updatePayload = {
         text: data.foodName,
         type: 'Meal',
         completed: meal.completed ?? false,
         notes: details,
         plannerId: meal.plannerId,
         id: meal.id,
-        logId: meal.logId,
+        date: date, // 🔽 ADD THIS
       };
-
-      // Update Task
-      const taskRes = await fetchApi('PUT', `/api/tasks/${meal.id}`, taskUpdatePayload);
-
-      // Update Log (if linked)
-      let logResOk = true;
-      if (meal.logId) {
-        const logUpdatePayload = {
-          details,
-          calories: estimatedCalories,
-          type: 'Food',
-        };
-        const logRes = await fetchApi('PUT', `/api/logs/${meal.logId}`, logUpdatePayload);
-        logResOk = logRes.status === 200;
-      }
-
-      if (taskRes.status === 200 && taskRes.data && logResOk) {
-        onAddMeal?.(taskRes.data as PlannerItem);
+      const updateRes = await fetchApi('PUT', `/api/tasks/${meal.id}`, updatePayload);
+      if (updateRes.status === 200 && updateRes.data) {
+        reset();
         onSuccess?.();
+        onAddMeal?.(updateRes.data as PlannerItem);
         if (!onChange) setOpen(true);
         onClose?.();
         return;
@@ -140,33 +124,29 @@ export default function FoodLoggerForm({
       }
     }
 
-    // ---------------------------
-    // CREATE NEW MEAL
-    // ---------------------------
-    const payload = {
-      date,
+    // Adding new meal/task
+    const logPayload = {
+      date: date, // 🔽 ADD THIS
       type: 'Food',
       details,
       calories: estimatedCalories,
     };
 
-    const logRes = await fetchApi('POST', '/api/logs', payload);
+    const logRes = await fetchApi('POST', '/api/logs', logPayload);
 
+    // Also log as a Planner Task
     const plannerRes = await fetchApi('GET', `/api/planners?date=${date}`);
     const plannerId = (plannerRes?.data as { id?: string })?.id;
 
     let taskResData = null;
-
-    if (plannerId && (logRes.status === 200 || logRes.status === 201)) {
-      const createdLog = logRes.data as { id: number };
-
+    if (plannerId) {
       const taskPayload = {
-        text: data.foodName,
+        text: details,
         type: 'Meal',
         completed: false,
         notes: details,
         plannerId,
-        logId: createdLog.id,
+        date: date, // 🔽 ADD THIS
       };
 
       const taskRes = await fetchApi('POST', '/api/tasks', taskPayload);
@@ -176,7 +156,7 @@ export default function FoodLoggerForm({
     if (logRes.status === 200 || logRes.status === 201) {
       reset();
       onSuccess?.();
-      onAddMeal?.(taskResData as PlannerItem);
+      onAddMeal?.((taskResData || logRes?.data) as PlannerItem);
       if (!onChange) setOpen(true);
       onClose?.();
     } else {
@@ -206,7 +186,7 @@ export default function FoodLoggerForm({
 
               {/* MACROS */}
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={4}>
+                <Grid>
                   <Controller
                     name="protein"
                     control={control}
@@ -223,7 +203,7 @@ export default function FoodLoggerForm({
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid>
                   <Controller
                     name="carbs"
                     control={control}
@@ -240,7 +220,7 @@ export default function FoodLoggerForm({
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid>
                   <Controller
                     name="fats"
                     control={control}
