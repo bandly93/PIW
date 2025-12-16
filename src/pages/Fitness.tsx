@@ -33,7 +33,7 @@ const Fitness = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [macros, setMacros] = useState({ protein: 0, carbs: 0, fats: 0 });
+  const [macros, setMacros] = useState({ proteins: 0, carbs: 0, fats: 0 });
   const dispatch = useAppDispatch()
 
   useEffect(() => {
@@ -45,19 +45,23 @@ const Fitness = () => {
 
       try {
         const { data } = await fetchApi<LogEntry[]>('GET', `/api/logs?type=Food&date=${date}`, null, dispatch);
-        setLogs(data);
 
-        const totals = data.reduce(
+        console.log(data)
+        setLogs(data ?? []);
+
+        const totals = (data ?? []).reduce(
           (acc, log) => {
-            const match = log.details.match(/Protein: ([\d.]+)g, Carbs: ([\d.]+)g, Fats: ([\d.]+)g/);
+            const match = log.details.match(/Proteins: ([\d.]+)g, Carbs: ([\d.]+)g, Fats: ([\d.]+)g/);
             if (!match) return acc;
-            acc.protein += parseFloat(match[1]);
+            acc.proteins += parseFloat(match[1]);
             acc.carbs += parseFloat(match[2]);
             acc.fats += parseFloat(match[3]);
             return acc;
           },
-          { protein: 0, carbs: 0, fats: 0 }
+          { proteins: 0, carbs: 0, fats: 0 }
         );
+
+
 
         console.log('Calculated macros:', totals);
 
@@ -73,7 +77,7 @@ const Fitness = () => {
   }, [selectedDate]); // 👈 ✅ Dependency added here
 
   type MacroGoals = {
-    proteinGoal: number;
+    proteinsGoal: number;
     carbsGoal: number;
     fatsGoal: number;
     calorieGoal: number;
@@ -85,7 +89,7 @@ const Fitness = () => {
     const fetchGoals = async () => {
       try {
         const { data } = await fetchApi<MacroGoals>('GET', `/api/user/goals`, null);
-        setGoals(data);
+        setGoals(data ?? null);
       } catch (err) {
         console.error('Failed to fetch macro goals:', err);
       }
@@ -145,7 +149,7 @@ const Fitness = () => {
                 {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : ''}
               </Typography>
               <MacroPieChart
-                protein={macros.protein}
+                proteins={macros.proteins}
                 carbs={macros.carbs}
                 fats={macros.fats}
               />
@@ -165,16 +169,16 @@ const Fitness = () => {
                 </Typography>
                 <Stack direction="row" spacing={2} justifyContent="center" alignItems="center">
                   <Stack alignItems="center">
-                    <Typography variant="body2" color="primary">Protein</Typography>
-                    <Typography fontWeight="bold">{goals.proteinGoal}g</Typography>
+                    <Typography variant="body2" color="primary">Proteins</Typography>
+                    <Typography fontWeight="bold">{goals.proteinsGoal}g</Typography>
                   </Stack>
                   <Stack alignItems="center">
                     <Typography variant="body2" color="secondary">Carbs</Typography>
-                    <Typography fontWeight="bold">{goals.carbGoal}g</Typography>
+                    <Typography fontWeight="bold">{goals.carbsGoal}g</Typography>
                   </Stack>
                   <Stack alignItems="center">
                     <Typography variant="body2" color="warning.main">Fat</Typography>
-                    <Typography fontWeight="bold">{goals.fatGoal}g</Typography>
+                    <Typography fontWeight="bold">{goals.fatsGoal}g</Typography>
                   </Stack>
                   <Stack alignItems="center">
                     <Typography variant="body2" color="success.main">Calories</Typography>

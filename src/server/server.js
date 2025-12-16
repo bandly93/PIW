@@ -25,6 +25,7 @@ app.use('/api/stats', statsRoutes);
 sequelize.sync({  
   alter: true,
   logging: false,
+  force: true
 }) // ✅ Use `force: true` to reset tables (dev only)
   .then(() => {
     console.log('Database synced ✅');

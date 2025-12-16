@@ -21,7 +21,7 @@ interface TaskItem {
   text: string;
   type: 'Meal' | 'Errand' | 'Work' | 'Other';
   completed: boolean;
-  protein?: number;
+  proteins?: number;
   carbs?: number;
   fats?: number;
   calories?: number;
@@ -32,7 +32,7 @@ const TasksEditor = () => {
   const [text, setText] = useState('');
   const [type, setType] = useState<'Meal' | 'Errand' | 'Work' | 'Other'>('Work');
 
-  const [protein, setProtein] = useState('');
+  const [proteins, setProteins] = useState('');
   const [carbs, setCarbs] = useState('');
   const [fats, setFats] = useState('');
 
@@ -45,18 +45,18 @@ const TasksEditor = () => {
       type,
       completed: false,
       ...(type === 'Meal' && {
-        protein: Number(protein),
+        proteins: Number(proteins),
         carbs: Number(carbs),
         fats: Number(fats),
         calories:
-          Number(protein) * 4 + Number(carbs) * 4 + Number(fats) * 9,
+          Number(proteins) * 4 + Number(carbs) * 4 + Number(fats) * 9,
       }),
     };
 
     setTasks((prev) => [...prev, newTask]);
     setText('');
     setType('Other');
-    setProtein('');
+    setProteins('');
     setCarbs('');
     setFats('');
   };
@@ -105,7 +105,6 @@ const TasksEditor = () => {
         {tasks.map((task) => (
           <ListItem
             key={task.id}
-            button
             onClick={() => toggleTask(task.id)}
             sx={{ textDecoration: task.completed ? 'line-through' : 'none' }}
             secondaryAction={

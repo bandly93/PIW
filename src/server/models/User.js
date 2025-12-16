@@ -18,17 +18,17 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       defaultValue: 2000,
     },
-    proteinGoal: {
+    proteinsGoal: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 150,
     },
-    carbGoal: {
+    carbsGoal: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 200,
     },
-    fatGoal: {
+    fatsGoal: {
       type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: 70,

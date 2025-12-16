@@ -15,9 +15,9 @@ router.get('/goals', authenticateToken, async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     res.json({
-      proteinGoal: user.proteinGoal,
-      carbGoal: user.carbGoal,
-      fatGoal: user.fatGoal,
+      proteinsGoal: user.proteinsGoal,
+      carbsGoal: user.carbsGoal,
+      fatsGoal: user.fatsGoal,
       calorieGoal: user.calorieGoal,
     });
   } catch (err) {

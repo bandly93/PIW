@@ -1,4 +1,4 @@
-import {  Paper, Typography, Stack, LinearProgress, Grid } from '@mui/material';
+import { Paper, Typography, Stack, LinearProgress, Grid } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TaskStatBox from './TaskStatBox';
 
@@ -25,20 +25,24 @@ const Dashboard = ({
           Your Dashboard
         </Typography>
       </Stack>
+
+      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'white' }}>
+        Completed Tasks
+      </Typography>
+
       <Grid container spacing={3}>
         <TaskStatBox
-          label='Today'
+          label="Today"
           completed={completedToday}
           total={totalTasksToday}
-          
         />
-         <TaskStatBox
-          label='This Week'
+        <TaskStatBox
+          label="This Week"
           completed={completedWeek}
           total={totalTasksWeek}
         />
         <TaskStatBox
-          label='This Month'
+          label="This Month"
           completed={completedMonth}
           total={totalTasksMonth}
         />

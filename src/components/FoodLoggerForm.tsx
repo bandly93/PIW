@@ -20,7 +20,7 @@ import { getLocalDateString } from '../utils/getLocalDateString';
 
 export interface FoodFormData {
   foodName: string;
-  protein?: number;
+  proteins?: number;
   carbs?: number;
   fats?: number;
 }
@@ -45,21 +45,21 @@ export default function FoodLoggerForm({
   const { control, handleSubmit, setValue, reset, watch } = useForm<FoodFormData>({
     defaultValues: value || {
       foodName: '',
-      protein: 0,
+      proteins: 0,
       carbs: 0,
       fats: 0,
     },
   });
 
-  // Parse "Chicken - Protein: 30g, Carbs: 10g, Fats: 12g"
+  // Parse "Chicken - Proteins: 30g, Carbs: 10g, Fats: 12g"
   function parseDetails(details: string) {
     const [foodNamePart, macrosPart] = details.split(' - ');
-    let protein, carbs, fats;
+    let proteins, carbs, fats;
 
     if (macrosPart) {
       const macros = macrosPart.split(',').map((s) => s.trim());
       macros.forEach((macro) => {
-        if (macro.startsWith('Protein:')) protein = Number(macro.replace(/[^0-9.]/g, ''));
+        if (macro.startsWith('Protein:')) proteins = Number(macro.replace(/[^0-9.]/g, ''));
         if (macro.startsWith('Carbs:')) carbs = Number(macro.replace(/[^0-9.]/g, ''));
         if (macro.startsWith('Fats:')) fats = Number(macro.replace(/[^0-9.]/g, ''));
       });
@@ -67,7 +67,7 @@ export default function FoodLoggerForm({
 
     return {
       foodName: foodNamePart || '',
-      protein: protein || 0,
+      proteins: proteins || 0,
       carbs: carbs || 0,
       fats: fats || 0,
     };
@@ -78,7 +78,7 @@ export default function FoodLoggerForm({
     if (meal) {
       const parsed = parseDetails(meal.notes || meal.text || '');
       setValue('foodName', parsed.foodName);
-      setValue('protein', parsed.protein);
+      setValue('proteins', parsed.proteins);
       setValue('carbs', parsed.carbs);
       setValue('fats', parsed.fats);
     } else if (value) {
@@ -88,15 +88,15 @@ export default function FoodLoggerForm({
     }
   }, [meal, value, setValue]);
 
-  const protein = Number(watch('protein')) || 0;
+  const proteins = Number(watch('proteins')) || 0;
   const carbs = Number(watch('carbs')) || 0;
   const fats = Number(watch('fats')) || 0;
 
-  const estimatedCalories = protein * 4 + carbs * 4 + fats * 9;
+  const estimatedCalories = proteins * 4 + carbs * 4 + fats * 9;
   const [open, setOpen] = useState(false);
 
   const onSubmit = async (data: FoodFormData) => {
-    const details = `${data.foodName} - Protein: ${protein}g, Carbs: ${carbs}g, Fats: ${fats}g`;
+    const details = `${data.foodName} - Proteins: ${proteins}g, Carbs: ${carbs}g, Fats: ${fats}g`;
     const date = getLocalDateString(); // Get today's date in YYYY-MM-DD format
 
     if (meal && meal.id) {
@@ -188,11 +188,11 @@ export default function FoodLoggerForm({
               <Grid container spacing={2}>
                 <Grid>
                   <Controller
-                    name="protein"
+                    name="proteins"
                     control={control}
                     render={({ field }) => (
                       <TextField
-                        label="Protein"
+                        label="Proteins"
                         type="number"
                         fullWidth
                         value={field.value ?? ''}

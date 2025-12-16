@@ -11,17 +11,19 @@ import { Paper, Typography, Box } from '@mui/material';
 const COLORS = ['#FE4A49', '#009FB7', '#FED766']; // Protein, Carbs, Fats
 
 interface MacroPieChartProps {
-  protein: number;
+  proteins: number;
   carbs: number;
   fats: number;
 }
 
-const MacroPieChart = ({ protein, carbs, fats }: MacroPieChartProps) => {
+const MacroPieChart = ({ proteins, carbs, fats }: MacroPieChartProps) => {
   const data = [
-    { name: 'Protein', value: protein },
-    { name: 'Carb', value: carbs },
-    { name: 'Fat', value: fats },
+    { name: 'Proteins', value: proteins },
+    { name: 'Carbs', value: carbs },
+    { name: 'Fats', value: fats },
   ];
+
+  console.log(data)
 
   return (
     <Paper sx={{ mt: 4, p: 2, borderRadius: 3 }}>
