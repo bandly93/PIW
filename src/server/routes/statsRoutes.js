@@ -3,35 +3,43 @@ const router = express.Router();
 const { Task } = require('../models');
 const { Op } = require('sequelize');
 
+// Helper: Get LOCAL date string (YYYY-MM-DD)
+const getLocalDateString = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // Get completed tasks for today, week, and month
 router.get('/tasks-stats', async (req, res) => {
   try {
-    // Get today's date in YYYY-MM-DD format
+    // Get today's date in LOCAL YYYY-MM-DD format
     const today = new Date();
-    const todayString = today.toISOString().split('T')[0];
+    const todayString = getLocalDateString(today);
 
-    // Get week start (Sunday) in YYYY-MM-DD format
+    // Get week start (Sunday) in LOCAL YYYY-MM-DD format
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - today.getDay());
-    const weekStartString = weekStart.toISOString().split('T')[0];
+    const weekStartString = getLocalDateString(weekStart);
 
-    // Get month start in YYYY-MM-DD format
+    // Get month start in LOCAL YYYY-MM-DD format
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const monthStartString = monthStart.toISOString().split('T')[0];
+    const monthStartString = getLocalDateString(monthStart);
 
     // Today's tasks (exclude type 'Meal')
     const completedToday = await Task.count({
       where: {
         completed: true,
         date: todayString,
-        type: { [Op.ne]: 'Meal' }, // 🔽 Exclude meals
+        type: { [Op.ne]: 'Meal' },
       },
     });
 
     const totalTasksToday = await Task.count({
       where: {
         date: todayString,
-        type: { [Op.ne]: 'Meal' }, // 🔽 Exclude meals
+        type: { [Op.ne]: 'Meal' },
       },
     });
 
@@ -40,14 +48,14 @@ router.get('/tasks-stats', async (req, res) => {
       where: {
         completed: true,
         date: { [Op.gte]: weekStartString },
-        type: { [Op.ne]: 'Meal' }, // 🔽 Exclude meals
+        type: { [Op.ne]: 'Meal' },
       },
     });
 
     const totalTasksWeek = await Task.count({
       where: {
         date: { [Op.gte]: weekStartString },
-        type: { [Op.ne]: 'Meal' }, // 🔽 Exclude meals
+        type: { [Op.ne]: 'Meal' },
       },
     });
 
@@ -56,14 +64,14 @@ router.get('/tasks-stats', async (req, res) => {
       where: {
         completed: true,
         date: { [Op.gte]: monthStartString },
-        type: { [Op.ne]: 'Meal' }, // 🔽 Exclude meals
+        type: { [Op.ne]: 'Meal' },
       },
     });
 
     const totalTasksMonth = await Task.count({
       where: {
         date: { [Op.gte]: monthStartString },
-        type: { [Op.ne]: 'Meal' }, // 🔽 Exclude meals
+        type: { [Op.ne]: 'Meal' },
       },
     });
 

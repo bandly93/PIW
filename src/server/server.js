@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes')
 const userRoutes = require('./routes/userRoutes')
 const taskRoutes = require('./routes/taskRoutes')
 const plannerRoutes = require('./routes/plannerRoutes');
-const statsRoutes = require('./routes/stats');
+const statsRoutes = require('./routes/statsRoutes');
 
 const app = express();
 app.use(cors());
@@ -25,7 +25,7 @@ app.use('/api/stats', statsRoutes);
 sequelize.sync({  
   alter: true,
   logging: false,
-  force: true
+  // force: true
 }) // ✅ Use `force: true` to reset tables (dev only)
   .then(() => {
     console.log('Database synced ✅');
