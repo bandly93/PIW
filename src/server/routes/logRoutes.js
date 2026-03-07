@@ -41,11 +41,14 @@ router.post('/', async (req, res) => {
   }
 });
 
-// UPDATE log 🔥 (new)
+// UPDATE log
 router.put('/:id', async (req, res) => {
   try {
     const log = await Log.findByPk(req.params.id);
     if (!log) return res.status(404).json({ message: 'Log not found' });
+    if (log.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
 
     const { details, calories, type, date } = req.body;
 

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { Planner } = require('../models');
+const authenticateToken = require('../middleware/authMiddleware');
 
-// Make sure you apply authentication middleware before these routes
-// Example: router.use(requireUser);
+router.use(authenticateToken);
 
 // GET /api/planners?date=YYYY-MM-DD
 router.get('/', async (req, res) => {

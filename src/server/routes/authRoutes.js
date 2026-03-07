@@ -4,9 +4,13 @@ const bcrypt = require('bcryptjs');
 const { User } = require('../models');
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRESIN = process.env.JWT_EXPIRESIN
-const authenticateToken = require('../middleware/authMiddleware')
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRESIN = process.env.JWT_EXPIRESIN || '7d';
+const authenticateToken = require('../middleware/authMiddleware');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 // POST: /login
 const loginHandler = async (req, res) => {
@@ -55,7 +59,7 @@ const registerHandler = async (req, res) => {
 
     res.status(201).json({
       token,
-      user: { id: user.id, email },
+      user: { id: user.id, email, name: user.name },
     });
   } catch (err) {
     console.error('🔥 Register error:', err);

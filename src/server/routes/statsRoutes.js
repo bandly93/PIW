@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { Task } = require('../models');
+const { Task, Planner } = require('../models');
 const { Op } = require('sequelize');
+const authenticateToken = require('../middleware/authMiddleware');
+
+router.use(authenticateToken);
 
 // Helper: Get LOCAL date string (YYYY-MM-DD)
 const getLocalDateString = (date = new Date()) => {
@@ -27,6 +30,10 @@ router.get('/tasks-stats', async (req, res) => {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
     const monthStartString = getLocalDateString(monthStart);
 
+    // Scope all counts to current user's planners (Task -> Planner -> userId)
+    const plannerWhere = { userId: req.user.id };
+    const includePlanner = { model: Planner, as: 'planner', where: plannerWhere, attributes: [] };
+
     // Today's tasks (exclude type 'Meal')
     const completedToday = await Task.count({
       where: {
@@ -34,6 +41,7 @@ router.get('/tasks-stats', async (req, res) => {
         date: todayString,
         type: { [Op.ne]: 'Meal' },
       },
+      include: [includePlanner],
     });
 
     const totalTasksToday = await Task.count({
@@ -41,6 +49,7 @@ router.get('/tasks-stats', async (req, res) => {
         date: todayString,
         type: { [Op.ne]: 'Meal' },
       },
+      include: [includePlanner],
     });
 
     // This week's tasks (exclude type 'Meal')
@@ -50,6 +59,7 @@ router.get('/tasks-stats', async (req, res) => {
         date: { [Op.gte]: weekStartString },
         type: { [Op.ne]: 'Meal' },
       },
+      include: [includePlanner],
     });
 
     const totalTasksWeek = await Task.count({
@@ -57,6 +67,7 @@ router.get('/tasks-stats', async (req, res) => {
         date: { [Op.gte]: weekStartString },
         type: { [Op.ne]: 'Meal' },
       },
+      include: [includePlanner],
     });
 
     // This month's tasks (exclude type 'Meal')
@@ -66,6 +77,7 @@ router.get('/tasks-stats', async (req, res) => {
         date: { [Op.gte]: monthStartString },
         type: { [Op.ne]: 'Meal' },
       },
+      include: [includePlanner],
     });
 
     const totalTasksMonth = await Task.count({
@@ -73,6 +85,7 @@ router.get('/tasks-stats', async (req, res) => {
         date: { [Op.gte]: monthStartString },
         type: { [Op.ne]: 'Meal' },
       },
+      include: [includePlanner],
     });
 
     res.json({

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import Chart from '../components/Chart';
 import { Container, Typography, Paper } from '@mui/material';
+import { fetchApi } from '../utils/fetch';
+import { useAppDispatch } from '../store';
 
 type LogEntry = {
   date: string;
@@ -8,22 +10,29 @@ type LogEntry = {
 };
 
 const Report = () => {
+  const dispatch = useAppDispatch();
   const [data, setData] = useState<{ date: string; value: number }[]>([]);
 
   useEffect(() => {
-    fetch('/api/logs')
-      .then(res => res.json())
-      .then((logs: LogEntry[]) => {
+    const load = async () => {
+      const { data: logs, status } = await fetchApi<LogEntry[]>(
+        'GET',
+        '/api/logs',
+        null,
+        dispatch
+      );
+      if (status === 200 && Array.isArray(logs)) {
         const chartData = logs
-          .filter(log => log.calories)
-          .map(log => ({
+          .filter((log) => log.calories != null)
+          .map((log) => ({
             date: log.date,
             value: log.calories!,
           }));
-
         setData(chartData);
-      });
-  }, []);
+      }
+    };
+    load();
+  }, [dispatch]);
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>

@@ -1,15 +1,16 @@
 import {
   Paper,
   Typography,
-  Stack
+  Stack,
 } from '@mui/material';
-import { useState, useEffect, useReducer } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   DndContext,
   closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -20,7 +21,7 @@ import SortableTask from './SortableTask';
 import TaskModal from './TaskModal';
 import TaskTypeButtons from './TaskTypeButtons';
 import { fetchApi } from '../utils/fetch';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '../store';
 
 export interface PlannerItem {
   id: string;
@@ -30,7 +31,8 @@ export interface PlannerItem {
   notes: string;
   order: number;
   plannerId: string;
-  logId?: number;   // 🔽 NEW
+  date?: string;
+  logId?: number;
 }
 
 interface Props {
@@ -38,7 +40,7 @@ interface Props {
   plannerId: string;
 }
 
-const initialTask: PlannerItem = {
+const INITIAL_TASK: PlannerItem = {
   id: '',
   text: '',
   type: 'Other',
@@ -50,49 +52,65 @@ const initialTask: PlannerItem = {
 };
 
 const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
-  const [plannerItem, setPlannerItem] = useReducer(
-    (state: PlannerItem, newState: Partial<PlannerItem>) => ({
-      ...state,
-      ...newState,
-    }),
-    initialTask
+  const dispatch = useAppDispatch();
+  
+  const [taskList, setTaskList] = useState<PlannerItem[]>([]);
+  const [editTask, setEditTask] = useState<PlannerItem | null>(null);
+  const [currentTask, setCurrentTask] = useState<PlannerItem>(INITIAL_TASK);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 }, // Prevent accidental drags
+    })
   );
 
-  const [editTask, setEditTask] = useState<PlannerItem | null>(null);
-  const [taskList, setTaskList] = useState<PlannerItem[]>([]);
-  const [showModal, setShowModal] = useState(false);
-  const dispatch = useDispatch();
-
-  const { text, type, notes, completed } = plannerItem;
+  // Load tasks for the selected date
+  const loadTasks = useCallback(async () => {
+    if (!selectedDate) return;
+    
+    setLoading(true);
+    try {
+      const { data, status } = await fetchApi<PlannerItem[]>(
+        'GET',
+        `/api/tasks?date=${selectedDate}&plannerId=${plannerId}`,
+        null,
+        dispatch
+      );
+      if (status === 200 && data) {
+        setTaskList(data);
+      }
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate, plannerId, dispatch]);
 
   useEffect(() => {
-    async function loadTasks() {
-      try {
-        const { data, status } = await fetchApi<PlannerItem[]>(
-          'GET',
-          `/api/tasks?date=${selectedDate}`
-        );
-        if (status === 200 && data) {
-          setTaskList(data);
-        }
-      } catch (error) {
-        console.error('Error loading tasks:', error);
-      }
-    }
     loadTasks();
-  }, [selectedDate]);
+  }, [loadTasks]);
 
-  const handleAdd = async () => {
-    if (!text.trim()) return;
+  // Reset form when closing modal
+  const resetForm = useCallback(() => {
+    setCurrentTask(INITIAL_TASK);
+    setEditTask(null);
+    setShowModal(false);
+  }, []);
+
+  // Add a new task
+  const handleAdd = useCallback(async () => {
+    if (!currentTask.text.trim()) return;
 
     const newItem = {
-      text,
-      type,
-      completed,
-      notes,
+      text: currentTask.text,
+      type: currentTask.type,
+      completed: currentTask.completed,
+      notes: currentTask.notes,
       plannerId,
       order: taskList.length,
-      date: selectedDate, // 🔽 ADD THIS
+      date: selectedDate,
     };
 
     try {
@@ -104,29 +122,29 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
       );
       if (status === 201 && data) {
         setTaskList((prev) => [...prev, data]);
+        resetForm();
       }
     } catch (error) {
       console.error('Error adding task:', error);
       alert('Error adding task.');
     }
-  };
+  }, [currentTask, plannerId, selectedDate, taskList.length, dispatch, resetForm]);
 
-  const handleEdit = async (updatedTask: PlannerItem) => {
+  // Edit an existing task
+  const handleEdit = useCallback(async (updatedTask: PlannerItem) => {
     try {
-      const response = await fetchApi(
+      const { data, status } = await fetchApi<PlannerItem>(
         'PUT',
         `/api/tasks/${updatedTask.id}`,
-        {
-          ...updatedTask,
-          date: selectedDate, // 🔽 ADD THIS
-        }
+        { ...updatedTask, date: selectedDate },
+        dispatch
       );
-      if (response.status === 200 && response.data) {
-        setTaskList((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-          )
+      
+      if (status === 200 && data) {
+        setTaskList((prev) =>
+          prev.map((task) => (task.id === updatedTask.id ? data : task))
         );
+        resetForm();
       } else {
         alert('Failed to update task.');
       }
@@ -134,57 +152,76 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
       console.error('Error editing task:', error);
       alert('Error editing task.');
     }
-  };
+  }, [selectedDate, dispatch, resetForm]);
 
-  const handleSave = async () => {
-    if (!plannerItem.text.trim()) return;
-
-    if (editTask) {
-      await handleEdit(plannerItem);
-      setEditTask(null);
-    } else {
-      await handleAdd();
-    }
-
-    setPlannerItem(initialTask);
-    setShowModal(false);
-  };
-
-  const handleDelete = async (taskId: string) => {
+  // Delete a task
+  const handleDelete = useCallback(async (taskId: string) => {
     try {
-      const response = await fetchApi('DELETE', `/api/tasks/${taskId}`);
-      if (response.status === 200 || response.status === 204) {
+      const { status } = await fetchApi('DELETE', `/api/tasks/${taskId}`, null, dispatch);
+      
+      if (status === 200 || status === 204) {
         setTaskList((prev) => prev.filter((task) => task.id !== taskId));
       } else {
         alert('Failed to delete task.');
       }
     } catch (error) {
+      console.error('Error deleting task:', error);
       alert('An error occurred while deleting.');
     }
-  };
+  }, [dispatch]);
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  // Save (add or edit)
+  const handleSave = useCallback(async () => {
+    if (!currentTask.text.trim()) return;
 
-  const handleDragEnd = (event: any) => {
+    if (editTask) {
+      await handleEdit({ ...currentTask, id: editTask.id });
+    } else {
+      await handleAdd();
+    }
+  }, [currentTask, editTask, handleAdd, handleEdit]);
+
+  // Handle drag end
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = taskList.findIndex((i) => i.id === active.id);
-    const newIndex = taskList.findIndex((i) => i.id === over.id);
+    setTaskList((prev) => {
+      const oldIndex = prev.findIndex((i) => i.id === active.id);
+      const newIndex = prev.findIndex((i) => i.id === over.id);
 
-    const newOrder = arrayMove(taskList, oldIndex, newIndex).map((task, idx) => ({
-      ...task,
-      order: idx,
-    }));
+      const reordered = arrayMove(prev, oldIndex, newIndex).map((task, idx) => ({
+        ...task,
+        order: idx,
+      }));
 
-    setTaskList(newOrder);
-  };
+      // TODO: Persist order to backend
+      // fetchApi('PUT', '/api/tasks/reorder', { tasks: reordered }, dispatch);
+
+      return reordered;
+    });
+  }, []);
+
+  // Open edit modal
+  const openEditModal = useCallback((task: PlannerItem) => {
+    setEditTask(task);
+    setCurrentTask(task);
+    setShowModal(true);
+  }, []);
+
+  // Update current task field
+  const updateCurrentTask = useCallback((updates: Partial<PlannerItem>) => {
+    setCurrentTask((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const completedCount = taskList.filter((t) => t.completed).length;
+  const sortedTasks = [...taskList].sort((a, b) => a.order - b.order);
 
   return (
     <Paper sx={{ p: 2, mb: 4 }}>
       <TaskTypeButtons
         showModal={showModal}
-        setTaskType={(type) => setPlannerItem({ type })}
+        setTaskType={(type) => updateCurrentTask({ type })}
         setShowModal={setShowModal}
       />
 
@@ -194,41 +231,35 @@ const TimeBlockSection = ({ selectedDate, plannerId }: Props) => {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={taskList.map((i) => i.id)}
+          items={sortedTasks.map((t) => t.id)}
           strategy={verticalListSortingStrategy}
         >
           <Stack spacing={1}>
-            {taskList
-              .sort((a, b) => a.order - b.order)
-              .map((task, index) => (
-                <SortableTask
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  onEditTask={handleEdit}
-                  onDeleteTask={handleDelete}
-                  openEditModal={(task) => {
-                    setEditTask(task);
-                    setPlannerItem(task);
-                    setShowModal(true);
-                  }}
-                />
-              ))}
+            {sortedTasks.map((task, index) => (
+              <SortableTask
+                key={task.id}
+                task={task}
+                index={index}
+                onEditTask={handleEdit}
+                onDeleteTask={handleDelete}
+                openEditModal={openEditModal}
+              />
+            ))}
           </Stack>
         </SortableContext>
       </DndContext>
 
       <Typography variant="body2" align="right" sx={{ mt: 2 }}>
-        Completed: {taskList.filter((i) => i.completed).length} / {taskList.length}
+        Completed: {completedCount} / {taskList.length}
       </Typography>
 
       <TaskModal
         showModal={showModal}
         setShowModal={setShowModal}
-        text={text}
-        taskType={type}
-        setPlannerItem={setPlannerItem}
-        notes={notes}
+        text={currentTask.text}
+        taskType={currentTask.type}
+        setPlannerItem={updateCurrentTask}
+        notes={currentTask.notes}
         handleSave={handleSave}
         editTask={editTask}
         setTaskList={setTaskList}
